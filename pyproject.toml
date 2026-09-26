@@ -1,0 +1,41 @@
+[project]
+name = "handrail"
+version = "0.1.0"
+description = "Learn a task once, replay it deterministically, escalate only when a check fails."
+requires-python = ">=3.12"
+dependencies = ["pydantic>=2.7"]
+
+[project.optional-dependencies]
+# Each surface and each model backend is opt-in, so `handrail replay` installs none of them.
+browser = ["playwright>=1.60"]
+terminal = ["py3270>=0.3"]
+author = ["langchain>=1.4", "langchain-anthropic>=1.0", "langchain-typesafe>=0.0.1a3"]
+classify = ["typesafe-sdk>=0.7"]
+
+[dependency-groups]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5", "mypy>=1.10"]
+
+[project.scripts]
+handrail = "handrail.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/handrail"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["src"]
