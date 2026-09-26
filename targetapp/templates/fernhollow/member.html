@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hdr">{{ cfg.member_header }}</div>
+<table class="box">
+  <tr><td>Member</td><td>{{ member.member_number }}</td></tr>
+  <tr><td>Name</td><td>{{ member.display_name }}</td></tr>
+  <tr><td>Branch</td><td>{{ member.branch }}</td></tr>
+</table>
+<div class="hdr">SHARES / BALANCES</div>
+<div class="panel"><table class="{{ cfg.shares_table_class }}">
+  <tr><th>Share ID</th><th>Type</th><th>Balance</th><th>Status</th><th></th></tr>
+  {% for s in shares %}
+  <tr>
+    <td>{{ s.share_id }}</td>
+    <td>{{ s.share_type }}</td>
+    <td>{{ s.balance_display }}</td>
+    <td>{{ s.status }}</td>
+    <td><a href="/hold/new?share={{ s.share_id }}">Hold</a></td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% endblock %}

@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hdr">HOLD RESULT</div>
+<div class="{{ 'hdr' if ok else 'msg' }}">{{ text }}</div>
+{% endblock %}

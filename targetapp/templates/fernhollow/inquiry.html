@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hdr">MEMBER INQUIRY</div>
+<form method="post" action="/inquiry">
+<table class="box">
+  <tr>
+    <td>Search by</td>
+    <td><select name="sby">
+      <option value="MBRNO">Member Number</option>
+      <option value="LASTNM">Last Name</option>
+    </select></td>
+    <td>Value</td>
+    <td><input name="{{ cfg.search_value_field }}" size="12"></td>
+    <td><input type="submit" class="btn" value="{{ cfg.search_submit_label }}"></td>
+  </tr>
+</table>
+</form>
+{% if message %}<div class="msg">{{ message }}</div>{% endif %}
+{% if results %}
+<table class="{{ cfg.shares_table_class }}">
+  <tr><th>Member</th><th>Name</th><th>Branch</th></tr>
+  {% for m in results %}
+  <tr>
+    <td><a href="/member/{{ m.member_number }}">{{ m.member_number }}</a></td>
+    <td>{{ m.display_name }}</td>
+    <td>{{ m.branch }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+{% endblock %}

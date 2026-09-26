@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hdr">PLACE ACCOUNT HOLD</div>
+<form method="post" action="/hold/review">
+<table class="box">
+  <tr><td>Share</td><td>{{ share.share_id }}</td></tr>
+  <tr><td>Balance</td><td>{{ share.balance_display }}</td></tr>
+  <tr><td>Reason</td><td><select name="rsn">
+    {% for r in reasons %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+  </select></td></tr>
+  <tr><td>Notes</td><td><textarea name="nt" rows="2" cols="30"></textarea></td></tr>
+  <tr><td colspan="2"><input type="submit" class="btn" value="F8=Review"></td></tr>
+</table>
+<input type="hidden" name="share" value="{{ share.share_id }}">
+</form>
+{% endblock %}

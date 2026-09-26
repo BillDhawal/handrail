@@ -11,9 +11,11 @@ browser = ["playwright>=1.60"]
 terminal = ["py3270>=0.3"]
 author = ["langchain>=1.4", "langchain-anthropic>=1.0", "langchain-typesafe>=0.0.1a3"]
 classify = ["typesafe-sdk>=0.7"]
+# PLUMBLINE, the deliberately hostile mock core-banking app we test against.
+bank = ["flask>=3.0"]
 
 [dependency-groups]
-dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5", "mypy>=1.10"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5", "mypy>=1.10", "flask>=3.0"]
 
 [project.scripts]
 handrail = "handrail.cli:main"

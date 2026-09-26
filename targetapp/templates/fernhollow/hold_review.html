@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hdr">HOLD REVIEW</div>
+<div class="warn">{{ banner }}</div>
+<table class="box">
+  <tr><td>Share</td><td>{{ share.share_id }}</td></tr>
+  <tr><td>Current status</td><td>{{ share.status }}</td></tr>
+  <tr><td>Reason</td><td>{{ reason }}</td></tr>
+</table>
+<form method="post" action="/hold/post">
+  <input type="hidden" name="share" value="{{ share.share_id }}">
+  <input type="hidden" name="rsn" value="{{ reason }}">
+  <input type="hidden" name="nt" value="{{ notes }}">
+  <input type="submit" class="btn" value="F10=Post Hold">
+</form>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hdr">OPERATOR SIGN ON</div>
+{% if error %}<div class="msg">{{ error }}</div>{% endif %}
+<form method="post" action="/signon">
+<table class="box">
+  <tr><td>Operator ID</td><td><input name="opid" size="10"></td></tr>
+  <tr><td>Password</td><td><input type="password" name="pw" size="10"></td></tr>
+  <tr><td>Branch</td><td><select name="br">
+    {% for b in cfg.branches %}<option value="{{ b }}">{{ b }}</option>{% endfor %}
+  </select></td></tr>
+  <tr><td colspan="2"><input type="submit" class="btn" value="F5=Sign On"></td></tr>
+</table>
+<input type="hidden" name="_tk" value="{{ token }}">
+</form>
+{% endblock %}

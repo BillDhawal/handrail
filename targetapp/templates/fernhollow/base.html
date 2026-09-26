@@ -1,0 +1,19 @@
+<html>
+<head><title>PLUMBLINE - {{ cfg.institution }}</title>
+<style>
+body { font-family: monospace; background: #e6e0d4; margin: 0; padding: 6px; }
+table.box { border: 1px solid #666; background: #f6f2e8; padding: 6px; }
+table.lst { border-collapse: collapse; }
+table.lst td, table.lst th { border: 1px solid #999; padding: 3px 8px; }
+div.panel { border: 1px solid #666; padding: 4px; }
+.hdr { background: #3a2f22; color: #fff; padding: 4px 8px; font-weight: bold; }
+.msg { color: #802; font-weight: bold; padding: 6px 0; }
+.warn { background: #fee; border: 1px solid #a44; padding: 4px; }
+input.btn { font-family: monospace; }
+</style>
+</head>
+<body>
+<div class="hdr">PLUMBLINE&nbsp;&nbsp;{{ cfg.institution }}</div>
+{% block content %}{% endblock %}
+</body>
+</html>
