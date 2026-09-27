@@ -64,7 +64,7 @@ What it proves: the artifact refuses to be inconsistent, and the core cannot rea
 
 Run: `uv run pytest -q` — 50 passed.
 
-### 1. The engine on a fake surface
+### 1. The engine on a fake surface — done
 
 What it proves: replay is deterministic and the journal invariant holds on every path.
 
@@ -79,7 +79,8 @@ What it proves: replay is deterministic and the journal invariant holds on every
 | `tests/replay/test_engine.py` | The happy path, a business outcome, each failure code |
 | `tests/invariants/test_journal.py` | A dispatched-not-observed step is never re-run: retry, restart, rewind, dialog |
 
-Demo: `uv run pytest tests/replay -q`. The factory capability replays on `NullSurface`.
+Run: `make test` — 141 passed. The factory capability replays on `NullSurface`; a commit in
+doubt is refused on a second run and the click count across both runs is one.
 
 ### 2. The browser surface
 

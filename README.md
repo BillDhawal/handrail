@@ -25,7 +25,7 @@ inputs ────────────────────────�
 
 ```bash
 uv sync                      # the core: pydantic only
-uv run pytest -q             # 50 passed
+make test                    # 141 passed
 ```
 
 Surfaces and model backends are opt-in extras, so a replay installs none of them:
@@ -42,4 +42,6 @@ Replay needs neither.
 
 ## Status
 
-Milestone 0 of 8: the schema and the first invariants. See the plan for what comes next.
+Milestones 0 and 1 of 8 are done: the schema, the invariants, and the engine on a scripted
+surface. Next is the browser surface. See [docs/HANDOFF.md](docs/HANDOFF.md) for where things
+stand and [docs/PLAN.md](docs/PLAN.md) for what comes next.
