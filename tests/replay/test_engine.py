@@ -191,3 +191,18 @@ async def test_a_reused_engine_does_not_mix_two_runs(tmp_path):
     eng.surface = NullSurface(pages())
     second = await eng.run(capability(), INPUTS)
     assert len(second.steps) == 5
+
+
+async def test_a_target_named_by_an_input_is_resolved_under_its_bound_name(tmp_path):
+    cap = place_hold()
+    cap["inputs"].append({"name": "share_id", "pattern": "^[0-9]{6}-S[0-9]{4}$"})
+    cap["targets"]["open_hold"]["name"] = {"eq": "{{input.share_id}}"}
+    stage = pages()
+    stage[0].matches = {("role_name", "Member number"): 1, ("role_name", "400118-S0001"): 1}
+    stage[0].advance_on = frozenset({"400118-S0001"})
+    surface = NullSurface(stage)
+    result = await engine(surface, tmp_path).run(
+        Capability.model_validate(cap), {**INPUTS, "share_id": "400118-S0001"}
+    )
+    assert result.category is OutcomeCategory.SUCCESS
+    assert ("invoke", "400118-S0001", None) in surface.actions

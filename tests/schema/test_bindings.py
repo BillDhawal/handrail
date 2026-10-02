@@ -31,3 +31,27 @@ def test_a_missing_value_raises_rather_than_typing_the_braces():
 
 def test_non_string_inputs_are_rendered_as_text():
     assert bind_text("amount={{input.amount}}", {"amount": 125.5}, {}) == "amount=125.5"
+
+
+def test_a_target_can_carry_a_binding_in_its_name_scope_and_rungs():
+    from handrail.schema.bindings import bind_target
+    from handrail.schema.target import Target
+
+    css = "a[href$='{{input.share}}']"
+    target = Target.model_validate(
+        {
+            "role": "link",
+            "name": {"eq": "{{input.member}}"},
+            "supports": {"invoke": []},
+            "scope": [{"role": "row", "name": "{{input.share}}"}],
+            "ladder": [
+                {"rung": "role_name", "cost": 100},
+                {"rung": "native", "cost": 10_000_000, "surface": "browser", "value": css},
+            ],
+        }
+    )
+    bound = bind_target(target, {"member": "400118", "share": "400118-S0001"}, {})
+    assert bound.name and bound.name.eq == "400118"
+    assert bound.scope[0].name == "400118-S0001"
+    assert bound.ladder[1].value == "a[href$='400118-S0001']"
+    assert target.name and target.name.eq == "{{input.member}}"  # the artifact is untouched

@@ -42,6 +42,8 @@ class Query:
     value: str = ""
     role: str = ""
     name: str = ""
+    #: True when `name` is a pattern to match rather than text to equal.
+    regex: bool = False
 
 
 class Probe(Protocol):
@@ -90,13 +92,13 @@ def candidates(control: Control) -> list[Rung]:
     return rungs
 
 
-def query_for(rung: Rung, role: str, name: str) -> Query:
+def query_for(rung: Rung, role: str, name: str, regex: bool = False) -> Query:
     """The one translation from a rung to a question. Authoring and replay both use it."""
     value = rung.value or ""
     if rung.rung == "stable_id":
         return Query("test_id", value)
     if rung.rung == "role_name":
-        return Query("role", role=role, name=name)
+        return Query("role", role=role, name=name, regex=regex)
     if rung.rung == "label":
         caption = _xpath_literal(value)
         return Query(

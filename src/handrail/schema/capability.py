@@ -12,7 +12,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .bindings import find_bindings, residue
+from .bindings import find_bindings, residue, target_texts
 from .effects import Effect, EffectClass
 from .errors import DEFAULT_CATEGORY, ErrorCode, OutcomeCategory
 from .target import TARGETED_VERBS, Target, Verb
@@ -193,6 +193,8 @@ class Capability(_Model):
     def _bindings_are_closed(self) -> Capability:
         declared = {i.name for i in self.inputs}
         texts = [self.surface.entry] + [s.op.value for s in self.steps if s.op.value]
+        for target in self.targets.values():
+            texts += target_texts(target)
         for text in texts:
             if residue(text):
                 raise ValueError(f"binding residue {residue(text)} in {text!r}")

@@ -130,3 +130,9 @@ def test_unknown_fields_are_refused_so_a_typo_cannot_hide():
     cap = place_hold()
     cap["safe_restart"] = True
     refused(cap, "safe_restart")
+
+
+def test_a_binding_inside_a_target_must_also_name_a_declared_input():
+    cap = place_hold()
+    cap["targets"]["open_hold"]["name"] = {"eq": "{{input.share_id}}"}
+    refused(cap, "share_id")

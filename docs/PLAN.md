@@ -82,17 +82,37 @@ What it proves: replay is deterministic and the journal invariant holds on every
 Run: `make test` — 141 passed. The factory capability replays on `NullSurface`; a commit in
 doubt is refused on a second run and the click count across both runs is one.
 
-### 2. The browser surface
+### 2. The browser surface — done
+
+What it proves: the same engine drives a real, hostile page with zero model calls.
 
 | file | what it teaches |
 |---|---|
-| `surface/browser/operations.py` | Building the indexed operations table from the accessibility tree |
-| `surface/browser/locators.py` | Turning a resolved element into ladder rungs, probing each for uniqueness |
+| `surface/browser/operations.py` | The numbered menu: one row per legal verb on each present, enabled control |
+| `surface/browser/locators.py` | A rung survives only if it finds exactly one element, and it is the right one |
 | `surface/browser/fingerprint.py` | The structural hash, with the two exclusions the prototype learned |
-| `surface/browser/surface.py` | Playwright behind the six verbs |
-| `capabilities/example.json` | A hand-written capability against a public demo site |
+| `surface/browser/walk.py` | One JavaScript walk per frame: controls, captions, and the screen signature |
+| `surface/browser/queries.py` | A `Query` into a Playwright locator; authoring and replay ask the same question |
+| `surface/browser/surface.py` | Playwright behind the six verbs; `evaluate` never waits, `resolve` may |
+| `capabilities/plumbline-place-hold.json` | Eleven steps, nine screens, three outcomes, signatures from a live walk |
+| `cli.py` | `handrail replay` and `handrail observe`; the exit code is the outcome category |
 
-Demo: `handrail replay capabilities/example.json --input ...` against a real page, `llm_calls=0`.
+Run: `make test` — 204 passed, about ten seconds, ten of them on a real Chromium against
+PLUMBLINE started inside the test. Demo:
+
+```bash
+make up
+BASE_URL=http://127.0.0.1:8081 uv run handrail replay capabilities/plumbline-place-hold.json \
+  --input operator_id=dcolewell --input password=plumbline-demo \
+  --input member_number=400118 --input share_id=400118-S0005 --input reason=LEGAL
+```
+
+Prints `SUCCESS`, the confirmation, `llm_calls=0 classifier_calls=0`, drift 11/11 first-choice.
+
+Three things the live page taught, each now a test: bindings are needed inside targets ("the
+Hold link in the row for *this* share"); the settle check must bind its target too; and after a
+click that submits a form in a frame, the old document is still visible until the new one
+commits, so the surface waits for the frame navigation before the engine asks which screen it is.
 
 ### 3. Authoring and the compiler
 

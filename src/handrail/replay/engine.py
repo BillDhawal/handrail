@@ -30,7 +30,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from ..kernel.evidence import Recorder
-from ..schema.bindings import BindingError, bind_text
+from ..schema.bindings import BindingError, bind_target, bind_text
 from ..schema.capability import Capability, Step
 from ..schema.effects import EffectClass
 from ..schema.errors import ErrorCode, HandrailError, OutcomeCategory
@@ -180,9 +180,8 @@ class ReplayEngine:
         resolution: Resolution | None = None
         if step.target is not None:
             try:
-                resolution = await self.surface.resolve(
-                    capability.targets[step.target], self.settle_timeout_ms
-                )
+                target = bind_target(capability.targets[step.target], params, self.env)
+                resolution = await self.surface.resolve(target, self.settle_timeout_ms)
             except HandrailError as exc:
                 raise HandrailError(exc.message, exc.code, step.id) from exc
             drift.steps_resolved += 1
@@ -196,7 +195,7 @@ class ReplayEngine:
         if step.op.verb == "read" and result.value is not None:
             read_values[step.id] = result.value
 
-        if not await self._settled(capability, step):
+        if not await self._settled(capability, step, params):
             raise HandrailError(
                 f"{step.settle.kind} never came true after {step.id}", ErrorCode.SLOW_LOAD, step.id
             )
@@ -250,11 +249,11 @@ class ReplayEngine:
         if declared is not None and declared.category is not OutcomeCategory.SUCCESS:
             raise _Finished(seen)
 
-    async def _settled(self, capability: Capability, step: Step) -> bool:
+    async def _settled(self, capability: Capability, step: Step, params: dict[str, Any]) -> bool:
         s = step.settle
         if s.kind == "target_present":
             nxt = capability.step(s.step or step.id)
-            target = capability.targets[nxt.target or ""]
+            target = bind_target(capability.targets[nxt.target or ""], params, self.env)
             condition = f"target_present:{target.name.eq if target.name else target.role}"
         elif s.kind == "screen_is":
             condition = f"screen_is:{capability.screens[s.screen or step.screen].signature}"

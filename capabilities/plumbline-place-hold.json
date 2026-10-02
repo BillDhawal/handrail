@@ -1,0 +1,632 @@
+{
+  "schema_version": "capability/2",
+  "id": "plumbline.place_hold",
+  "version": "0.1.0",
+  "title": "Place a hold on a member's share in PLUMBLINE (Quarrybrook). Hand-written 2026-10-02; signatures taken from a live walk.",
+  "lifecycle": {
+    "state": "draft"
+  },
+  "surface": {
+    "kind": "browser",
+    "entry": "{{env.BASE_URL}}/signon",
+    "requires": [
+      "role_query"
+    ]
+  },
+  "inputs": [
+    {
+      "name": "operator_id",
+      "pattern": "^[a-z]{3,12}$",
+      "description": "Supervisor operator id"
+    },
+    {
+      "name": "password",
+      "sensitivity": "secret"
+    },
+    {
+      "name": "member_number",
+      "pattern": "^[0-9]{6}$"
+    },
+    {
+      "name": "share_id",
+      "pattern": "^[0-9]{6}-S[0-9]{4}$"
+    },
+    {
+      "name": "reason",
+      "type": "enum",
+      "enum": [
+        "LEGAL",
+        "FRAUD_REVIEW",
+        "MEMBER_REQUEST"
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "confirmation",
+      "source": {
+        "step": "read_result",
+        "extract": "CONFIRMATION\\s+(\\S+)"
+      },
+      "produced_on": [
+        "posted"
+      ]
+    }
+  ],
+  "screens": {
+    "signon": {
+      "signature": "sha256:2784006a9f88b7ec",
+      "label": "the operator sign-on form"
+    },
+    "desk": {
+      "signature": "sha256:600f0fd50430de9d",
+      "label": "the desk: menu on the left, member inquiry on the right"
+    },
+    "inquiry_results": {
+      "signature": "sha256:b21a3899297f810f",
+      "label": "member inquiry with a results table"
+    },
+    "no_match": {
+      "signature": "sha256:35db56373480423b",
+      "label": "member inquiry saying no record matches"
+    },
+    "member": {
+      "signature": "sha256:a89ebfb282a5f92c",
+      "label": "the member record with its shares"
+    },
+    "hold_form": {
+      "signature": "sha256:10302c3dd475b853",
+      "label": "the place-hold form for one share"
+    },
+    "hold_review": {
+      "signature": "sha256:b4388ed6786af26d",
+      "label": "the hold review screen with the post button"
+    },
+    "posted": {
+      "signature": "sha256:a16cf14481dca9fa",
+      "label": "hold result: the hold was posted"
+    },
+    "already_held": {
+      "signature": "sha256:7e09d33cc428209e",
+      "label": "hold result: the share was already under hold"
+    }
+  },
+  "targets": {
+    "operator_field": {
+      "role": "textbox",
+      "name": {
+        "eq": "Operator ID"
+      },
+      "supports": {
+        "set_value": [
+          "string"
+        ],
+        "read": []
+      },
+      "scope": [],
+      "ladder": [
+        {
+          "rung": "label",
+          "cost": 140,
+          "value": "Operator ID"
+        },
+        {
+          "rung": "native",
+          "cost": 10000000,
+          "value": "[name=\"opid\"]",
+          "surface": "browser"
+        }
+      ]
+    },
+    "password_field": {
+      "role": "textbox",
+      "name": {
+        "eq": "Password"
+      },
+      "supports": {
+        "set_value": [
+          "string"
+        ],
+        "read": []
+      },
+      "scope": [],
+      "ladder": [
+        {
+          "rung": "label",
+          "cost": 140,
+          "value": "Password"
+        },
+        {
+          "rung": "native",
+          "cost": 10000000,
+          "value": "[name=\"pw\"]",
+          "surface": "browser"
+        }
+      ]
+    },
+    "sign_on_button": {
+      "role": "button",
+      "name": {
+        "eq": "F5=Sign On"
+      },
+      "supports": {
+        "invoke": []
+      },
+      "scope": [],
+      "ladder": [
+        {
+          "rung": "role_name",
+          "cost": 100
+        },
+        {
+          "rung": "text",
+          "cost": 180,
+          "value": "F5=Sign On"
+        }
+      ]
+    },
+    "search_field": {
+      "role": "textbox",
+      "name": {
+        "eq": "Value"
+      },
+      "supports": {
+        "set_value": [
+          "string"
+        ],
+        "read": []
+      },
+      "scope": [
+        {
+          "role": "frame",
+          "name": "work"
+        }
+      ],
+      "ladder": [
+        {
+          "rung": "label",
+          "cost": 140,
+          "value": "Value"
+        },
+        {
+          "rung": "native",
+          "cost": 10000000,
+          "value": "[name=\"sval\"]",
+          "surface": "browser"
+        }
+      ]
+    },
+    "search_button": {
+      "role": "button",
+      "name": {
+        "eq": "F5=Search"
+      },
+      "supports": {
+        "invoke": []
+      },
+      "scope": [
+        {
+          "role": "frame",
+          "name": "work"
+        }
+      ],
+      "ladder": [
+        {
+          "rung": "role_name",
+          "cost": 100
+        },
+        {
+          "rung": "text",
+          "cost": 180,
+          "value": "F5=Search"
+        }
+      ]
+    },
+    "member_link": {
+      "role": "link",
+      "name": {
+        "eq": "{{input.member_number}}"
+      },
+      "supports": {
+        "invoke": []
+      },
+      "scope": [
+        {
+          "role": "frame",
+          "name": "work"
+        }
+      ],
+      "ladder": [
+        {
+          "rung": "role_name",
+          "cost": 100
+        },
+        {
+          "rung": "native",
+          "cost": 10000000,
+          "value": "a[href$=\"/member/{{input.member_number}}\"]",
+          "surface": "browser"
+        }
+      ]
+    },
+    "hold_link": {
+      "role": "link",
+      "name": {
+        "eq": "Hold"
+      },
+      "supports": {
+        "invoke": []
+      },
+      "scope": [
+        {
+          "role": "frame",
+          "name": "work"
+        },
+        {
+          "role": "row",
+          "name": "{{input.share_id}}"
+        }
+      ],
+      "ladder": [
+        {
+          "rung": "role_name",
+          "cost": 100
+        },
+        {
+          "rung": "native",
+          "cost": 10000000,
+          "value": "a[href$=\"share={{input.share_id}}\"]",
+          "surface": "browser"
+        }
+      ]
+    },
+    "reason_list": {
+      "role": "combobox",
+      "name": {
+        "eq": "Reason"
+      },
+      "supports": {
+        "select": [
+          "string"
+        ],
+        "read": []
+      },
+      "scope": [
+        {
+          "role": "frame",
+          "name": "work"
+        }
+      ],
+      "ladder": [
+        {
+          "rung": "label",
+          "cost": 140,
+          "value": "Reason"
+        },
+        {
+          "rung": "native",
+          "cost": 10000000,
+          "value": "[name=\"rsn\"]",
+          "surface": "browser"
+        }
+      ]
+    },
+    "review_button": {
+      "role": "button",
+      "name": {
+        "eq": "F8=Review"
+      },
+      "supports": {
+        "invoke": []
+      },
+      "scope": [
+        {
+          "role": "frame",
+          "name": "work"
+        }
+      ],
+      "ladder": [
+        {
+          "rung": "role_name",
+          "cost": 100
+        },
+        {
+          "rung": "text",
+          "cost": 180,
+          "value": "F8=Review"
+        }
+      ]
+    },
+    "post_button": {
+      "role": "button",
+      "name": {
+        "eq": "F10=Post Hold"
+      },
+      "supports": {
+        "invoke": []
+      },
+      "scope": [
+        {
+          "role": "frame",
+          "name": "work"
+        }
+      ],
+      "ladder": [
+        {
+          "rung": "role_name",
+          "cost": 100
+        },
+        {
+          "rung": "text",
+          "cost": 180,
+          "value": "F10=Post Hold"
+        }
+      ]
+    },
+    "result_line": {
+      "role": "status",
+      "name": {
+        "eq": "HOLD RESULT"
+      },
+      "supports": {
+        "read": []
+      },
+      "scope": [
+        {
+          "role": "frame",
+          "name": "work"
+        }
+      ],
+      "ladder": [
+        {
+          "rung": "native",
+          "cost": 10000000,
+          "value": "div.hdr:last-of-type, div.msg",
+          "surface": "browser"
+        }
+      ]
+    }
+  },
+  "steps": [
+    {
+      "id": "enter_operator",
+      "intent": "Type the operator id",
+      "screen": "signon",
+      "op": {
+        "verb": "set_value",
+        "value": "{{input.operator_id}}"
+      },
+      "target": "operator_field",
+      "effect": {
+        "kind": "stage"
+      },
+      "settle": {
+        "kind": "target_present",
+        "step": "enter_password"
+      }
+    },
+    {
+      "id": "enter_password",
+      "intent": "Type the password",
+      "screen": "signon",
+      "op": {
+        "verb": "set_value",
+        "value": "{{input.password}}"
+      },
+      "target": "password_field",
+      "effect": {
+        "kind": "stage"
+      },
+      "settle": {
+        "kind": "target_present",
+        "step": "sign_on"
+      }
+    },
+    {
+      "id": "sign_on",
+      "intent": "Sign on",
+      "screen": "signon",
+      "op": {
+        "verb": "invoke"
+      },
+      "target": "sign_on_button",
+      "effect": {
+        "kind": "navigate"
+      },
+      "settle": {
+        "kind": "screen_is",
+        "screen": "desk"
+      },
+      "expect": {
+        "screen_in": [
+          "desk"
+        ]
+      }
+    },
+    {
+      "id": "enter_member",
+      "intent": "Type the member number into the inquiry",
+      "screen": "desk",
+      "op": {
+        "verb": "set_value",
+        "value": "{{input.member_number}}"
+      },
+      "target": "search_field",
+      "effect": {
+        "kind": "stage"
+      },
+      "settle": {
+        "kind": "target_present",
+        "step": "search"
+      }
+    },
+    {
+      "id": "search",
+      "intent": "Search for the member",
+      "screen": "desk",
+      "op": {
+        "verb": "invoke"
+      },
+      "target": "search_button",
+      "effect": {
+        "kind": "navigate"
+      },
+      "settle": {
+        "kind": "keyboard_unlocked"
+      },
+      "expect": {
+        "screen_in": [
+          "inquiry_results",
+          "no_match"
+        ]
+      }
+    },
+    {
+      "id": "open_member",
+      "intent": "Open the member record",
+      "screen": "inquiry_results",
+      "op": {
+        "verb": "invoke"
+      },
+      "target": "member_link",
+      "effect": {
+        "kind": "navigate"
+      },
+      "settle": {
+        "kind": "screen_is",
+        "screen": "member"
+      },
+      "expect": {
+        "screen_in": [
+          "member"
+        ]
+      }
+    },
+    {
+      "id": "open_hold",
+      "intent": "Open the hold form for this share",
+      "screen": "member",
+      "op": {
+        "verb": "invoke"
+      },
+      "target": "hold_link",
+      "effect": {
+        "kind": "navigate"
+      },
+      "settle": {
+        "kind": "screen_is",
+        "screen": "hold_form"
+      },
+      "expect": {
+        "screen_in": [
+          "hold_form"
+        ]
+      }
+    },
+    {
+      "id": "choose_reason",
+      "intent": "Choose the hold reason",
+      "screen": "hold_form",
+      "op": {
+        "verb": "select",
+        "value": "{{input.reason}}"
+      },
+      "target": "reason_list",
+      "effect": {
+        "kind": "stage"
+      },
+      "settle": {
+        "kind": "target_present",
+        "step": "review"
+      }
+    },
+    {
+      "id": "review",
+      "intent": "Go to the review screen",
+      "screen": "hold_form",
+      "op": {
+        "verb": "invoke"
+      },
+      "target": "review_button",
+      "effect": {
+        "kind": "navigate"
+      },
+      "settle": {
+        "kind": "screen_is",
+        "screen": "hold_review"
+      },
+      "expect": {
+        "screen_in": [
+          "hold_review"
+        ]
+      }
+    },
+    {
+      "id": "post_hold",
+      "intent": "Post the hold",
+      "screen": "hold_review",
+      "op": {
+        "verb": "invoke"
+      },
+      "target": "post_button",
+      "effect": {
+        "kind": "commit",
+        "proposed_by": "dhawal",
+        "probe": "hold_exists"
+      },
+      "settle": {
+        "kind": "target_present",
+        "step": "read_result"
+      },
+      "expect": {
+        "screen_in": [
+          "posted",
+          "already_held"
+        ]
+      }
+    },
+    {
+      "id": "read_result",
+      "intent": "Read the result line",
+      "screen": "posted",
+      "op": {
+        "verb": "read"
+      },
+      "target": "result_line",
+      "effect": {
+        "kind": "read"
+      },
+      "settle": {
+        "kind": "screen_is",
+        "screen": "posted"
+      }
+    }
+  ],
+  "outcomes": {
+    "posted": {
+      "category": "SUCCESS",
+      "description": "The hold is on the share; confirmation is in outputs"
+    },
+    "already_held": {
+      "category": "BUSINESS_OUTCOME",
+      "code": "ALREADY_PROCESSED",
+      "description": "The share was already under hold; nothing was changed"
+    },
+    "no_match": {
+      "category": "BUSINESS_OUTCOME",
+      "code": "RECORD_NOT_FOUND",
+      "description": "No member record matches that number"
+    }
+  },
+  "safety": {
+    "allowed_hosts": [
+      "127.0.0.1:8081"
+    ],
+    "allowed_verbs": [
+      "set_value",
+      "invoke",
+      "select",
+      "read"
+    ]
+  }
+}
