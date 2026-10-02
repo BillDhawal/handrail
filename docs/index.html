@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handrail</title>
+<meta name="description" content="Learn a task once, replay it deterministically, escalate only when a check fails.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono&display=swap">
+<style>
+:root{--bg:#F3F5F2;--surface:#FFFFFF;--ink:#15302B;--muted:#56706A;--line:#CBD6D1;--teal:#1F6F63;--brass:#8F6208}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1F1C;--surface:#162C28;--ink:#E6EFEA;--muted:#9DB5AE;--line:#2C4A44;--teal:#5CC2B1;--brass:#E0B04A;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",Verdana,sans-serif;font-size:17px;line-height:1.55}
+.wrap{max-width:46rem;margin:0 auto;padding:56px 20px 72px;display:flex;flex-direction:column;gap:28px}
+h1{font-family:"Bricolage Grotesque","Trebuchet MS",sans-serif;font-size:clamp(2.2rem,6vw,3.4rem);margin:0;line-height:1.05;letter-spacing:-.02em}
+p{margin:0;max-width:65ch}.lede{font-size:1.2rem;color:var(--muted)}
+.eyebrow{font-family:"IBM Plex Mono",Menlo,monospace;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--brass)}
+.pages{display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:16px}
+a.page{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:18px;color:inherit;text-decoration:none}
+a.page:hover,a.page:focus-visible{border-color:var(--teal);outline:none}
+a.page b{font-family:"Bricolage Grotesque",sans-serif;font-size:1.15rem}
+a.page span{color:var(--muted);font-size:.95rem}
+code{font-family:"IBM Plex Mono",Menlo,monospace;font-size:.9em}
+footer{color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="eyebrow">A computer-use system</span>
+  <h1>Handrail</h1>
+  <p class="lede">A model works a task out once. The run compiles to a typed, reviewable capability. Replay is plain code with no model in the loop. When a check fails, a ladder is climbed, and every rung only proposes.</p>
+  <div class="pages">
+    <a class="page" href="five-pictures.html"><b>Handrail in Five Pictures</b><span>The analogies the code is written in: the chef, the line cook, the waiter, the cashier, the stairs. Annotated illustrations and playable diagrams.</span></a>
+    <a class="page" href="as-built.html"><b>Handrail, as built</b><span>Architecture, the capability artifact, the replay and resolve workflows, the journal, planned workflows, use cases, code map. End of milestone 2.</span></a>
+  </div>
+  <p>Source and design documents are in the repository: <code>docs/DESIGN.md</code>, <code>docs/PLAN.md</code>, <code>docs/HANDOFF.md</code>.</p>
+  <footer>Updated 2026-10-02.</footer>
+</div>
+</body>
+</html>
