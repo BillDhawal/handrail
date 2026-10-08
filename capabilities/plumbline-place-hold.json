@@ -4,7 +4,14 @@
   "version": "0.1.0",
   "title": "Place a hold on a member's share in PLUMBLINE (Quarrybrook). Hand-written 2026-10-02; signatures taken from a live walk.",
   "lifecycle": {
-    "state": "draft"
+    "state": "approved",
+    "approved_by": "dhawal",
+    "approved_at": "2026-10-08T05:31:04+00:00",
+    "note": "",
+    "reliability": {
+      "replays": 3,
+      "clean": 3
+    }
   },
   "surface": {
     "kind": "browser",
@@ -16,34 +23,52 @@
   "inputs": [
     {
       "name": "operator_id",
+      "type": "string",
+      "required": true,
       "pattern": "^[a-z]{3,12}$",
+      "sensitivity": "low",
       "description": "Supervisor operator id"
     },
     {
       "name": "password",
-      "sensitivity": "secret"
+      "type": "string",
+      "required": true,
+      "sensitivity": "secret",
+      "description": ""
     },
     {
       "name": "member_number",
-      "pattern": "^[0-9]{6}$"
+      "type": "string",
+      "required": true,
+      "pattern": "^[0-9]{6}$",
+      "sensitivity": "low",
+      "description": ""
     },
     {
       "name": "share_id",
-      "pattern": "^[0-9]{6}-S[0-9]{4}$"
+      "type": "string",
+      "required": true,
+      "pattern": "^[0-9]{6}-S[0-9]{4}$",
+      "sensitivity": "low",
+      "description": ""
     },
     {
       "name": "reason",
       "type": "enum",
+      "required": true,
       "enum": [
         "LEGAL",
         "FRAUD_REVIEW",
         "MEMBER_REQUEST"
-      ]
+      ],
+      "sensitivity": "low",
+      "description": ""
     }
   ],
   "outputs": [
     {
       "name": "confirmation",
+      "type": "string",
       "source": {
         "step": "read_result",
         "extract": "CONFIRMATION\\s+(\\S+)"
@@ -56,39 +81,48 @@
   "screens": {
     "signon": {
       "signature": "sha256:2784006a9f88b7ec",
-      "label": "the operator sign-on form"
+      "label": "the operator sign-on form",
+      "paths": []
     },
     "desk": {
       "signature": "sha256:600f0fd50430de9d",
-      "label": "the desk: menu on the left, member inquiry on the right"
+      "label": "the desk: menu on the left, member inquiry on the right",
+      "paths": []
     },
     "inquiry_results": {
       "signature": "sha256:b21a3899297f810f",
-      "label": "member inquiry with a results table"
+      "label": "member inquiry with a results table",
+      "paths": []
     },
     "no_match": {
       "signature": "sha256:35db56373480423b",
-      "label": "member inquiry saying no record matches"
+      "label": "member inquiry saying no record matches",
+      "paths": []
     },
     "member": {
       "signature": "sha256:a89ebfb282a5f92c",
-      "label": "the member record with its shares"
+      "label": "the member record with its shares",
+      "paths": []
     },
     "hold_form": {
       "signature": "sha256:10302c3dd475b853",
-      "label": "the place-hold form for one share"
+      "label": "the place-hold form for one share",
+      "paths": []
     },
     "hold_review": {
       "signature": "sha256:b4388ed6786af26d",
-      "label": "the hold review screen with the post button"
+      "label": "the hold review screen with the post button",
+      "paths": []
     },
     "posted": {
       "signature": "sha256:a16cf14481dca9fa",
-      "label": "hold result: the hold was posted"
+      "label": "hold result: the hold was posted",
+      "paths": []
     },
     "already_held": {
       "signature": "sha256:7e09d33cc428209e",
-      "label": "hold result: the share was already under hold"
+      "label": "hold result: the share was already under hold",
+      "paths": []
     }
   },
   "targets": {
@@ -113,8 +147,8 @@
         {
           "rung": "native",
           "cost": 10000000,
-          "value": "[name=\"opid\"]",
-          "surface": "browser"
+          "surface": "browser",
+          "value": "[name=\"opid\"]"
         }
       ]
     },
@@ -139,8 +173,8 @@
         {
           "rung": "native",
           "cost": 10000000,
-          "value": "[name=\"pw\"]",
-          "surface": "browser"
+          "surface": "browser",
+          "value": "[name=\"pw\"]"
         }
       ]
     },
@@ -191,8 +225,8 @@
         {
           "rung": "native",
           "cost": 10000000,
-          "value": "[name=\"sval\"]",
-          "surface": "browser"
+          "surface": "browser",
+          "value": "[name=\"sval\"]"
         }
       ]
     },
@@ -244,8 +278,8 @@
         {
           "rung": "native",
           "cost": 10000000,
-          "value": "a[href$=\"/member/{{input.member_number}}\"]",
-          "surface": "browser"
+          "surface": "browser",
+          "value": "a[href$=\"/member/{{input.member_number}}\"]"
         }
       ]
     },
@@ -275,8 +309,8 @@
         {
           "rung": "native",
           "cost": 10000000,
-          "value": "a[href$=\"share={{input.share_id}}\"]",
-          "surface": "browser"
+          "surface": "browser",
+          "value": "a[href$=\"share={{input.share_id}}\"]"
         }
       ]
     },
@@ -306,8 +340,8 @@
         {
           "rung": "native",
           "cost": 10000000,
-          "value": "[name=\"rsn\"]",
-          "surface": "browser"
+          "surface": "browser",
+          "value": "[name=\"rsn\"]"
         }
       ]
     },
@@ -381,8 +415,8 @@
         {
           "rung": "native",
           "cost": 10000000,
-          "value": "div.hdr:last-of-type, div.msg",
-          "surface": "browser"
+          "surface": "browser",
+          "value": "div.hdr:last-of-type, div.msg"
         }
       ]
     }
@@ -572,6 +606,8 @@
       "effect": {
         "kind": "commit",
         "proposed_by": "dhawal",
+        "confirmed_by": "dhawal",
+        "confirmed_at": "2026-10-08T05:30:00+00:00",
         "probe": "hold_exists"
       },
       "settle": {
@@ -605,6 +641,7 @@
   "outcomes": {
     "posted": {
       "category": "SUCCESS",
+      "code": "NONE",
       "description": "The hold is on the share; confirmation is in outputs"
     },
     "already_held": {
@@ -622,6 +659,7 @@
     "allowed_hosts": [
       "127.0.0.1:8081"
     ],
+    "allowed_apps": [],
     "allowed_verbs": [
       "set_value",
       "invoke",

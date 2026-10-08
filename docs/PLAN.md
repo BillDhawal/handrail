@@ -258,12 +258,39 @@ What it taught:
   hand back; it does not record the person's clicks in the browser. That needs a Playwright
   event tap and is left for the macOS milestone, where the same tap flips the baton.
 
-### 7. Agents as callers
+### 7. Agents as callers — done
+
+What it proves: an agent never drives the screens. It orders from a menu of approved
+capabilities and reads a receipt, and "already held" is an answer it does not retry.
 
 | file | what it teaches |
 |---|---|
-| `serve/mcp.py` | One typed tool per approved capability; results say `retryable` and why not |
-| `examples/agent_caller.py` | A `deepagents` agent invokes a capability and handles "already held" |
+| `compile/approve.py` | The signature on the menu: a named person approves a *verified* card; a draft is refused; `deprecate` is the only way off |
+| `serve/mcp.py` | One typed tool per approved card, the card's public inputs as its schema; secrets from `HANDRAIL_SECRET_<NAME>`, never on the schema; the receipt is data |
+| `examples/agent_caller.py` | A `deepagents` agent given exactly the server's tools, told what a receipt means |
+| `cli` | `handrail approve CAP --by NAME`, `handrail serve --capabilities DIR` (MCP over stdio) |
+
+Run: `make test` — 332 passed. Demo, live, 2026-10-08:
+
+```bash
+handrail verify capabilities/plumbline-place-hold.json ...   # three clean plates
+handrail approve capabilities/plumbline-place-hold.json --by dhawal
+HANDRAIL_SECRET_PASSWORD=plumbline-demo BASE_URL=http://127.0.0.1:8081 \
+  uv run python examples/agent_caller.py "Place a LEGAL hold on share 400226-S0002 of member 400226"
+```
+
+| order | tool calls | receipt | what the agent said |
+|---|---|---|---|
+| share already on hold | 1 | BUSINESS_OUTCOME, ALREADY_PROCESSED, retryable false | "already has a hold in place; no further retry is warranted" |
+| a free share | 1 | SUCCESS, confirmation HX-975249 | reported the confirmation; the record store says HOLD |
+
+What it taught:
+
+- Stdout is the MCP wire. A greeting printed there corrupted the handshake and the client saw
+  "Connection closed". Everything for a person goes to stderr.
+- The hand-written card had a commit nobody had confirmed, so the gate refused to let it leave
+  draft after three clean plates. Correct. The owner's name was written in, then it verified.
+- The example must load `.env` itself; the server loads its own.
 
 ### 8. macOS accessibility surface (learning)
 

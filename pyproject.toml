@@ -11,6 +11,8 @@ browser = ["playwright>=1.60"]
 terminal = ["py3270>=0.3"]
 author = ["langchain>=1.4", "langchain-anthropic>=1.0", "langchain-typesafe>=0.0.1a3"]
 classify = ["typesafe-sdk>=0.7", "laya>=0.4"]
+# The MCP server, and the example agent that calls it.
+serve = ["mcp>=1.0", "langchain-mcp-adapters>=0.3", "deepagents>=0.7"]
 # PLUMBLINE, the deliberately hostile mock core-banking app we test against.
 bank = ["flask>=3.0"]
 

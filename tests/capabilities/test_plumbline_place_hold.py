@@ -50,10 +50,11 @@ async def replay(bank: str, tmp_path: Path, run_id: str, **inputs: str):
         await surface.close()
 
 
-def test_the_capability_file_is_valid_and_still_a_draft():
+def test_the_capability_file_is_valid_approved_and_its_commit_was_confirmed_by_a_name():
     cap = capability()
-    assert cap.lifecycle.state == "draft"
+    assert cap.lifecycle.state == "approved" and cap.lifecycle.approved_by == "dhawal"
     assert cap.step("post_hold").effect.kind == "commit"
+    assert cap.step("post_hold").effect.confirmed_by == "dhawal"
 
 
 async def test_a_hold_is_placed_with_zero_model_calls(bank: str, tmp_path: Path):

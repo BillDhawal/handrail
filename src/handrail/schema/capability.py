@@ -104,6 +104,9 @@ class Reliability(_Model):
 class Lifecycle(_Model):
     state: Literal["draft", "verified", "approved", "deprecated"] = "draft"
     approved_by: str | None = None
+    approved_at: str | None = None
+    deprecated_by: str | None = None
+    note: str = ""  # why it was deprecated, or anything else a person wants to say
     reliability: Reliability = Field(default_factory=Reliability)
 
 

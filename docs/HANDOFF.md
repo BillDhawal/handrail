@@ -1,6 +1,6 @@
 # Handoff — where things stand
 
-**Written:** 2026-10-08, at the end of milestone 6 (milestone 4, the terminal, is skipped until a 3270 host is at hand).
+**Written:** 2026-10-08, at the end of milestone 7 (milestone 4, the terminal, is skipped until a 3270 host is at hand).
 **For:** the next Claude session working in this folder, and for Dhawal coming back after a break.
 
 ## What this is, in three sentences
@@ -31,6 +31,9 @@ back-office software (banks and credit unions), not as the take-home it started 
 - 2026-10-08, later still: milestone 6 done. 321 tests. Laya verified on-device. The scout
   (rung two) crossed a reworded result in one turn; the console (rung three) took a person's
   hand-back on a page nothing else could place. The classify extra is installed.
+- 2026-10-08, last: milestone 7 done. 332 tests. The hand-written card is verified and approved;
+  a deepagents agent ordered through the MCP server and read "already held" as an answer. The
+  serve extra (mcp, langchain-mcp-adapters, deepagents) is installed.
 
 ## Decisions already made — do not reopen
 
@@ -54,13 +57,14 @@ src/handrail/
   replay/     validate, journal, engine, prepare, screens, rungs/{one,two,three}  1, 5, 6
   kernel/     evidence, signature, episodes, control (the baton)             milestones 1, 5, 6
   author/     tools, middleware, agent, recorder, run, bridge (the scout)     milestones 3, 6
-  compile/    compiler, verify                                                milestone 3
+  compile/    compiler, verify, approve                                       milestones 3, 7
   escalate/   questions, classifier, bridge (ports), backends/{claude,jev,laya}  milestones 5, 6
-  serve/      console (the stop button and the telephone)                     milestone 6
-  cli.py      replay (--classifier, --bridge, --console), observe, author, verify, episodes
-capabilities/ plumbline-place-hold.json (hand-written), .authored.json (model, verified, with paths)
+  serve/      console (the stop button), mcp (the counter other agents order at)  milestones 6, 7
+  cli.py      replay (--classifier, --bridge, --console), observe, author, verify, episodes, approve, serve
+capabilities/ plumbline-place-hold.json (hand-written, approved), .authored.json (model, verified)
+examples/     agent_caller.py, a deepagents agent ordering through the MCP server
 targetapp/    PLUMBLINE: two tenants, /__test__/share/<id>, faults drift_minor, drift_reword, drift_major
-tests/        321 passing; the invariants live in tests/invariants/
+tests/        332 passing; the invariants live in tests/invariants/
 docs/         DESIGN.md, PLAN.md, this file, the site (index, five-pictures, as-built), prototype/
 ```
 
@@ -69,7 +73,7 @@ scripted surface and returns `SUCCESS` with `confirmation=HX-829120`, both model
 The test to read first is `tests/replay/test_engine.py::test_a_step_in_doubt_is_never_repeated_across_runs`:
 the double-post bug from the prototype, made impossible by the journal.
 
-## Design choices made during milestones 1 to 6
+## Design choices made during milestones 1 to 7
 
 - **Stage steps are redone on a resumed run; commit steps never are.** Re-typing a field is
   harmless by definition. Without this a run resumed after a crash would skip typing the member
@@ -115,22 +119,27 @@ the double-post bug from the prototype, made impossible by the journal.
 - **The baton lives in `kernel/control.py` and the console only moves it.** The engine checks it
   before every step and waits while a person holds it; abort is final.
 - **Rungs are a package.** One file per rung, each with the same per-page memo.
+- **Secrets never reach an agent.** A secret input is not on the tool's schema; the server
+  fills it from `HANDRAIL_SECRET_<NAME>` at call time and refuses with INVALID_INPUT if unset.
+- **Only `approved` is served.** `handrail approve` writes a name and a time onto a verified
+  card and nothing else can. The server says, on stderr, why each other card is off the menu.
 
-## What is next — milestone 7, agents as callers
+## What is next
 
-Files, in order, each with a test first (details in `docs/PLAN.md`):
+Version 0.1 as PLAN.md defines it has two milestones left, and one is blocked:
 
-1. `serve/mcp.py` — one typed tool per approved capability. The tool's input schema is the
-   card's inputs; the result says the outcome category, the outputs, and whether a retry is safe
-   (`RunResult.retryable`). An agent never drives the screens; it calls the tool.
-2. `examples/agent_caller.py` — a `deepagents` caller that invokes place_hold and handles
-   "already held" without retrying.
+1. **README.md** still describes the empty skeleton. Make it the front door: what Handrail is,
+   the three demos (replay, author and verify, an agent ordering), how to run them. Half a day.
+2. **Milestone 8, macOS accessibility** (`surface/macos_ax/`): TextEdit, type and save a note,
+   no coordinates. Needs TCC permission on the Mac. The input-event tap that flips the baton
+   lives here. A learning milestone, not the product claim.
+3. **Milestone 4, the terminal**: blocked on a 3270 host. Hercules with MVS 3.8j, or a small
+   TN3270 mock written like PLUMBLINE, is a session of work before the surface itself.
 
-Needs: a lifecycle step that moves a verified card to `approved` with a named person (nothing
-grants that today; a `handrail approve CAP --by NAME` is the natural home), and the MCP SDK.
-
-Still pending: wire `which_control` into resolve (the control rung); a Playwright event tap
-so a person's clicks during `HUMAN_CONTROL` are recorded; milestone 4 when a 3270 host exists.
+Still pending from 5 and 6: the control rung (`which_control` into resolve, needs the replay
+surface to describe a menu row); a Playwright event tap so a person's clicks during
+`HUMAN_CONTROL` are recorded; the authored card has only one outcome, because authoring saw one
+path, so "already held" is a business outcome on the hand-written card only.
 
 ## Open questions, deliberately not guessed
 
@@ -179,3 +188,5 @@ so a person's clicks during `HUMAN_CONTROL` are recorded; milestone 4 when a 327
   does not exist.
 - A scout with eight turns and no commits still walked the application backwards. Four turns.
 - `zsh` does not word-split `$VAR`; a flag string in a variable is one argument. Use `${=VAR}`.
+- An MCP server over stdio owns stdout. One `print` of a greeting there and the client reports
+  "Connection closed" with no further explanation.

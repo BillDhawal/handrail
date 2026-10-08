@@ -207,9 +207,11 @@ def parser() -> argparse.ArgumentParser:
     o.add_argument("--headed", action="store_true")
     o.set_defaults(run=observe)
 
-    from .author.run import register
+    from .author.run import register as register_authoring
+    from .serve.mcp import register as register_serving
 
-    register(sub)
+    register_authoring(sub)
+    register_serving(sub)
     return p
 
 
