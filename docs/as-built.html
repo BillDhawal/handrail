@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Handrail at the end of milestone 3: architecture, the capability artifact, workflows, authoring, compile and verify, use cases and a code map.">
+<meta name="description" content="Handrail at the end of milestone 5: architecture, the capability artifact, workflows, authoring, compile and verify, the ladder's first rung, use cases and a code map.">
 <style>html{color-scheme:light dark}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Handrail, As Built</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
@@ -163,14 +163,14 @@ pre mark{background:var(--brass-soft);color:inherit;border-radius:2px;padding:0 
 
 <div class="wrap">
 <header>
-  <span class="eyebrow">Updated 2026-10-08, end of milestone 3</span>
+  <span class="eyebrow">Updated 2026-10-08, end of milestone 5</span>
   <h1>Handrail, as built</h1>
   <p class="lede">A model works a task out once. The run compiles to a typed, reviewable capability. Replay is plain code with no model in the loop. When a check fails, a ladder is climbed, and every rung only proposes.</p>
   <div class="kpis">
-    <span class="counter">tests <b>266</b></span><span class="counter">source lines <b>3,576</b></span><span class="counter">milestones done <b>0 to 3</b> of 8</span><span class="counter">authored once, replayed <b>100</b> times, llm_calls <b>0</b></span>
+    <span class="counter">tests <b>299</b></span><span class="counter">source lines <b>4,461</b></span><span class="counter">milestones done <b>0 to 3, 5</b> of 8</span><span class="counter">authored once, replayed <b>100</b> times, llm_calls <b>0</b></span>
   </div>
   <nav aria-label="Sections">
-    <a href="#arch">Architecture</a><a href="#artifact">The artifact</a><a href="#replay">Workflow: replay</a><a href="#resolve">Workflow: find a control</a><a href="#ledger">Workflow: the ledger</a><a href="#authoring">Workflow: authoring</a><a href="#verify">Workflow: compile and verify</a><a href="#planned">Planned</a><a href="#uses">Use cases</a><a href="#map">Code map</a><a href="five-pictures.html">The five pictures &nearr;</a>
+    <a href="#arch">Architecture</a><a href="#artifact">The artifact</a><a href="#replay">Workflow: replay</a><a href="#resolve">Workflow: find a control</a><a href="#ledger">Workflow: the ledger</a><a href="#authoring">Workflow: authoring</a><a href="#verify">Workflow: compile and verify</a><a href="#ladder">Workflow: the ladder</a><a href="#planned">Planned</a><a href="#uses">Use cases</a><a href="#map">Code map</a><a href="five-pictures.html">The five pictures &nearr;</a>
   </nav>
 </header>
 
@@ -178,7 +178,7 @@ pre mark{background:var(--brass-soft);color:inherit;border-radius:2px;padding:0 
   <span class="eyebrow">How the pieces fit</span>
   <h2>Architecture</h2>
   <p>Six layers. A caller hands a capability and inputs to the engine. The engine talks to one surface through six verbs and never sees the application directly. Solid boxes are built and tested. Dashed boxes are planned. Click any box.</p>
-  <div class="arch" id="archboxes"><div class="layer"><h3>Callers</h3><div class="boxes"><button type="button" class="box " data-id="cli" aria-pressed="false"><b>CLI</b><small>cli.py</small><span class="status st-built">built</span></button><button type="button" class="box later" data-id="mcp" aria-pressed="false"><b>MCP server</b><small>serve/mcp.py</small><span class="status st-later">planned</span></button><button type="button" class="box " data-id="author" aria-pressed="false"><b>Authoring loop</b><small>author/</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="compile" aria-pressed="false"><b>Compiler + verify gate</b><small>compile/</small><span class="status st-built">built</span></button></div></div><div class="joint"><span></span><span aria-hidden="true">&darr;</span></div><div class="layer"><h3>Artifact</h3><div class="boxes"><button type="button" class="box " data-id="cap" aria-pressed="false"><b>Capability</b><small>schema/capability.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="target" aria-pressed="false"><b>Target + ladder</b><small>schema/target.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="effects" aria-pressed="false"><b>Effect classes</b><small>schema/effects.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="bind" aria-pressed="false"><b>Bindings</b><small>schema/bindings.py</small><span class="status st-built">built</span></button></div></div><div class="joint"><span></span><span aria-hidden="true">&darr;</span></div><div class="layer"><h3>Core</h3><div class="boxes"><button type="button" class="box " data-id="engine" aria-pressed="false"><b>Replay engine</b><small>replay/engine.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="journal" aria-pressed="false"><b>Journal</b><small>replay/journal.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="validate" aria-pressed="false"><b>Input validation</b><small>replay/validate.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="evidence" aria-pressed="false"><b>Evidence recorder</b><small>kernel/evidence.py</small><span class="status st-built">built</span></button><button type="button" class="box later" data-id="ladder" aria-pressed="false"><b>Escalation ladder</b><small>escalate/</small><span class="status st-later">planned</span></button></div></div><div class="joint"><span></span><span aria-hidden="true">&darr;</span></div><div class="layer"><h3>Surface protocol</h3><div class="boxes"><button type="button" class="box " data-id="proto" aria-pressed="false"><b>Six verbs</b><small>surface/base.py</small><span class="status st-built">built</span></button></div></div><div class="joint"><span></span><span aria-hidden="true">&darr;</span></div><div class="layer"><h3>Surfaces</h3><div class="boxes"><button type="button" class="box " data-id="browser" aria-pressed="false"><b>Browser</b><small>surface/browser/</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="null" aria-pressed="false"><b>Null surface</b><small>surface/null_surface.py</small><span class="status st-built">built</span></button><button type="button" class="box later" data-id="term" aria-pressed="false"><b>Terminal 3270/5250</b><small>surface/terminal/</small><span class="status st-later">planned</span></button><button type="button" class="box later" data-id="mac" aria-pressed="false"><b>macOS accessibility</b><small>surface/macos_ax/</small><span class="status st-later">planned</span></button></div></div><div class="joint"><span></span><span aria-hidden="true">&darr;</span></div><div class="layer"><h3>Applications</h3><div class="boxes"><button type="button" class="box " data-id="plumb" aria-pressed="false"><b>PLUMBLINE</b><small>targetapp/</small><span class="status st-built">built</span></button><button type="button" class="box later" data-id="host" aria-pressed="false"><b>Green-screen host</b><small>&nbsp;</small><span class="status st-later">planned</span></button></div></div></div>
+  <div class="arch" id="archboxes"><div class="layer"><h3>Callers</h3><div class="boxes"><button type="button" class="box " data-id="cli" aria-pressed="false"><b>CLI</b><small>cli.py</small><span class="status st-built">built</span></button><button type="button" class="box later" data-id="mcp" aria-pressed="false"><b>MCP server</b><small>serve/mcp.py</small><span class="status st-later">planned</span></button><button type="button" class="box " data-id="author" aria-pressed="false"><b>Authoring loop</b><small>author/</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="compile" aria-pressed="false"><b>Compiler + verify gate</b><small>compile/</small><span class="status st-built">built</span></button></div></div><div class="joint"><span></span><span aria-hidden="true">&darr;</span></div><div class="layer"><h3>Artifact</h3><div class="boxes"><button type="button" class="box " data-id="cap" aria-pressed="false"><b>Capability</b><small>schema/capability.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="target" aria-pressed="false"><b>Target + ladder</b><small>schema/target.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="effects" aria-pressed="false"><b>Effect classes</b><small>schema/effects.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="bind" aria-pressed="false"><b>Bindings</b><small>schema/bindings.py</small><span class="status st-built">built</span></button></div></div><div class="joint"><span></span><span aria-hidden="true">&darr;</span></div><div class="layer"><h3>Core</h3><div class="boxes"><button type="button" class="box " data-id="engine" aria-pressed="false"><b>Replay engine</b><small>replay/engine.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="journal" aria-pressed="false"><b>Journal</b><small>replay/journal.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="validate" aria-pressed="false"><b>Input validation</b><small>replay/validate.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="signature" aria-pressed="false"><b>Screen signatures</b><small>kernel/signature.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="evidence" aria-pressed="false"><b>Evidence recorder</b><small>kernel/evidence.py</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="ladder" aria-pressed="false"><b>Escalation ladder</b><small>escalate/, replay/rungs.py</small><span class="status st-built">rung 1 built</span></button></div></div><div class="joint"><span></span><span aria-hidden="true">&darr;</span></div><div class="layer"><h3>Surface protocol</h3><div class="boxes"><button type="button" class="box " data-id="proto" aria-pressed="false"><b>Six verbs</b><small>surface/base.py</small><span class="status st-built">built</span></button></div></div><div class="joint"><span></span><span aria-hidden="true">&darr;</span></div><div class="layer"><h3>Surfaces</h3><div class="boxes"><button type="button" class="box " data-id="browser" aria-pressed="false"><b>Browser</b><small>surface/browser/</small><span class="status st-built">built</span></button><button type="button" class="box " data-id="null" aria-pressed="false"><b>Null surface</b><small>surface/null_surface.py</small><span class="status st-built">built</span></button><button type="button" class="box later" data-id="term" aria-pressed="false"><b>Terminal 3270/5250</b><small>surface/terminal/</small><span class="status st-later">planned</span></button><button type="button" class="box later" data-id="mac" aria-pressed="false"><b>macOS accessibility</b><small>surface/macos_ax/</small><span class="status st-later">planned</span></button></div></div><div class="joint"><span></span><span aria-hidden="true">&darr;</span></div><div class="layer"><h3>Applications</h3><div class="boxes"><button type="button" class="box " data-id="plumb" aria-pressed="false"><b>PLUMBLINE</b><small>targetapp/</small><span class="status st-built">built</span></button><button type="button" class="box later" data-id="host" aria-pressed="false"><b>Green-screen host</b><small>&nbsp;</small><span class="status st-later">planned</span></button></div></div></div>
   <div class="detail" id="archdetail" aria-live="polite"></div>
   <div class="how"><h3>What is happening, in order</h3><ol>
     <li>A caller loads a capability file and supplies inputs. Today that is the CLI; later an agent through the MCP server.</li>
@@ -415,15 +415,69 @@ act 3 invoke link "Hold"  row <span class="b">"400118-S0001"</span>   <span clas
   </div>
 </section>
 
+<section id="ladder">
+  <span class="eyebrow">Workflow 6</span>
+  <h2>The ladder, rung one, as it actually ran</h2>
+  <p>On 2026-10-08 the mock bank was changed under the verified card in two ways, and the card was replayed with a referee on call. Pick a change and follow what the engine did. Every number is from the live run.</p>
+  <div class="panel">
+    <h3 class="dtitle">Diagram 10. Recognising a screen that changed</h3>
+    <div class="panel-head"><p>Exact match, then the furniture, then the referee, and the referee's call is re-checked against the furniture before it is believed.</p>
+      <div class="btns" id="drift2">
+        <button type="button" class="ghost" data-k="0">No change</button>
+        <button type="button" class="ghost" data-k="1">Banner on every page</button>
+        <button type="button" class="ghost" data-k="2">Result line reworded</button>
+        <button type="button" class="ghost" data-k="3">Reworded, no referee</button>
+      </div>
+    </div>
+    <div class="stairs">
+      <div class="step s3" data-r="rung1"><b>Rung 1. The referee</b><small>which_screen among the card's screens plus none_of_these; accepted at 0.80 with margin 0.20, then re-checked: the chosen screen's stored furniture must overlap the page at 0.5</small></div>
+      <div class="step s2" data-r="similar"><b>Tier 2. Similar furniture</b><small>Jaccard of the page's paths against the stored paths, at or above 0.85</small></div>
+      <div class="step s1" data-r="exact"><b>Tier 1. Exact</b><small>the hash of the path set equals the stored signature</small></div>
+      <div class="step" data-r="result"><b>Result</b><small data-r2say></small></div>
+    </div>
+    <div class="counters">
+      <span class="counter">classifier_calls <b id="cc2">0</b></span>
+      <span class="counter">llm_calls <b>0</b></span>
+      <span class="counter">verdicts held <b id="held2">0 of 0</b></span>
+    </div>
+    <p class="verdict" id="drift2say"></p>
+    <div class="how"><h3>What is happening, in order</h3><ol>
+      <li>The engine names the screen before a step, while settling, and after it. Exact first: the hash of the page's paths equals a stored signature.</li>
+      <li>If not, similar: one extra banner on the sign-on page gave 6 of 7 paths, 0.857, still the room.</li>
+      <li>If not, and a referee is on call, the referee is asked a closed question: which of these screens, or none of these. The answer is a probability per option.</li>
+      <li>The engine checks the call. The chosen screen's stored paths must overlap the page at 0.5 or more. Screen text can steer a referee; furniture cannot be talked into anything.</li>
+      <li>Every whistle is a row in episodes.db, settled as held or not when the run ends. A referee is asked once per screen per run.</li>
+      <li>With no referee on call, the ladder stops at rung 0 and the run ends with a typed result, as before.</li>
+    </ol></div>
+  </div>
+  <div class="panel">
+    <h3 class="dtitle">Diagram 11. The referee's notebook, calibration by confidence</h3>
+    <div class="scroll"><table>
+      <thead><tr><th>Confidence</th><th>Verdicts</th><th>Held</th><th>Rate</th></tr></thead>
+      <tbody>
+        <tr><td>0.0 to 0.8</td><td>0</td><td>0</td><td>-</td></tr>
+        <tr><td>0.8 to 1.0</td><td>6</td><td>6</td><td>1.00</td></tr>
+      </tbody>
+    </table></div>
+    <p class="verdict">Six rows from one banner-drift replay, all at 0.95, all held. Too few to tune a threshold on; enough to show the loop is closed: ask, record, settle, bin. "Held" means the run ended in SUCCESS or a business outcome.</p>
+    <div class="how"><h3>Three backends behind one port</h3><ol>
+      <li>Claude, live: a model with the answer sheet enforced. Option labels are numbered because "Hold Result" is not a valid schema key.</li>
+      <li>Jev, TypeSafe's hosted referee, pinned to jev-1.13.0: written against the SDK, not yet run, no key.</li>
+      <li>Laya, on-device, nothing leaves the machine: written against the library, not yet run, the checkpoint did not fit on the disk.</li>
+      <li>A backend that cannot answer raises; the engine climbs past the rung. A run with no referee reachable finishes by refusing, never by guessing.</li>
+    </ol></div>
+  </div>
+</section>
+
 <section id="planned">
   <span class="eyebrow">Not built yet</span>
-  <h2>The ladder</h2>
-  <p>The one workflow the design calls for and the code does not have. Today a failed check ends the run with a typed result; from milestone 5 these rungs are climbed first.</p>
+  <h2>Rungs two and three</h2>
+  <p>What the design calls for and the code does not have yet. Rung one is built. When it says none of these, today the run ends with a typed result; from milestone 6 these two rungs are climbed first.</p>
   <div class="panel">
-    <h3 class="dtitle">Diagram 5. Escalation, milestones 5 and 6 <span class="status st-later">planned</span></h3>
+    <h3 class="dtitle">Diagram 5. Escalation, rungs two and three, milestone 6 <span class="status st-later">planned</span></h3>
     <div class="flow">
       <div class="box"><b>Check fails</b><small>screen or control does not match</small></div><span class="arrow">&rarr;</span>
-      <div class="box"><b>Rung 1: classifier</b><small>Laya on-device or Jev hosted; multiple choice among declared screens</small></div><span class="arrow">&rarr;</span>
+      <div class="box"><b>Rung 1: classifier</b><small>built: see Workflow 6</small></div><span class="arrow">&rarr;</span>
       <div class="box"><b>Rung 2: bounded model</b><small>authoring vocabulary, commit denied, must end on a declared screen</small></div><span class="arrow">&rarr;</span>
       <div class="box"><b>Rung 3: a person</b><small>takes over the same live session, hands back</small></div>
     </div>
@@ -474,13 +528,19 @@ act 3 invoke link "Hold"  row <span class="b">"400118-S0001"</span>   <span clas
       <tr><td>author and verify commands</td><td class="mono">author/run.py</td><td>197</td><td><span class="status st-built">built</span></td></tr>
       <tr><td>Recipe writer</td><td class="mono">compile/compiler.py</td><td>235</td><td><span class="status st-built">built</span></td></tr>
       <tr><td>The tasting</td><td class="mono">compile/verify.py</td><td>131</td><td><span class="status st-built">built</span></td></tr>
-      <tr><td>Terminal surface</td><td class="mono">surface/terminal/</td><td></td><td><span class="status st-later">milestone 4</span></td></tr>
-      <tr><td>Signatures, classifier, episodes</td><td class="mono">kernel/signature.py, escalate/</td><td></td><td><span class="status st-later">milestone 5</span></td></tr>
+      <tr><td>Terminal surface</td><td class="mono">surface/terminal/</td><td></td><td><span class="status st-later">milestone 4, waits on a 3270 host</span></td></tr>
+      <tr><td>Screen signatures, tiered</td><td class="mono">kernel/signature.py</td><td>86</td><td><span class="status st-built">built</span></td></tr>
+      <tr><td>The closed card</td><td class="mono">escalate/questions.py</td><td>131</td><td><span class="status st-built">built</span></td></tr>
+      <tr><td>The port</td><td class="mono">escalate/classifier.py</td><td>52</td><td><span class="status st-built">built</span></td></tr>
+      <tr><td>Referees</td><td class="mono">escalate/backends/claude.py, jev.py, laya.py</td><td>186</td><td><span class="status st-built">built, two unverified</span></td></tr>
+      <tr><td>The notebook</td><td class="mono">kernel/episodes.py</td><td>127</td><td><span class="status st-built">built</span></td></tr>
+      <tr><td>Rung one</td><td class="mono">replay/rungs.py</td><td>133</td><td><span class="status st-built">built</span></td></tr>
+      <tr><td>Naming a screen, preparing a run</td><td class="mono">replay/screens.py, replay/prepare.py</td><td>131</td><td><span class="status st-built">built</span></td></tr>
       <tr><td>Bridge, takeover console</td><td class="mono">escalate/bridge.py, serve/console.py</td><td></td><td><span class="status st-later">milestone 6</span></td></tr>
       <tr><td>MCP server, example agent</td><td class="mono">serve/mcp.py, examples/</td><td></td><td><span class="status st-later">milestone 7</span></td></tr>
     </tbody>
   </table></div>
-  <p>Tests: 266, of which 17 drive a real headless Chromium against PLUMBLINE, and one runs the whole evening with a scripted guest. The invariant tests in <span class="mono">tests/invariants/</span> read the source and refuse any model client in the core.</p>
+  <p>Tests: 299, of which 17 drive a real headless Chromium against PLUMBLINE, and one runs the whole evening with a scripted guest. The invariant tests in <span class="mono">tests/invariants/</span> read the source and refuse any model client in the core.</p>
 </section>
 
 <section id="pictures" class="appendix">
@@ -489,7 +549,7 @@ act 3 invoke link "Hold"  row <span class="b">"400118-S0001"</span>   <span clas
   <p>The analogies the code is written in, with annotated illustrations and playable diagrams, live on their own page: <a href="five-pictures.html">Handrail in Five Pictures</a>.</p>
 </section>
 
-<footer>Illustrations generated with Higgsfield. Diagrams reflect the repository at commit 5d3babf, end of milestone 3.</footer>
+<footer>Illustrations generated with Higgsfield. Diagrams reflect the repository at commit ae8b7df, end of milestone 5.</footer>
 </div>
 
 <script>
@@ -498,7 +558,7 @@ act 3 invoke link "Hold"  row <span class="b">"400118-S0001"</span>   <span clas
   var NOTES = { authoring: {"0": "Turn 1 of 19, assert_screen. pins the label to the screen's signature.", "1": "Turn 2 of 19, act. probes: label and native survive; stage.", "2": "Turn 3 of 19, act. probes; stage; the value is a blank, never stored.", "3": "Turn 4 of 19, act. button: commit until the owner says; owner says commit, dhawal.", "4": "Turn 5 of 19, assert_screen. pins the label.", "5": "Turn 6 of 19, act. stage; a literal that is not an input stays literal.", "6": "Turn 7 of 19, act. stage.", "7": "Turn 8 of 19, act. commit (owner says commit).", "8": "Turn 9 of 19, assert_screen. pins the label.", "9": "Turn 10 of 19, act. a link: navigate, nobody asked; the compiler will blank the name.", "10": "Turn 11 of 19, assert_screen. pins the label.", "11": "Turn 12 of 19, act. row 400118-S0001; probed inside that row; navigate.", "12": "Turn 13 of 19, assert_screen. pins the label.", "13": "Turn 14 of 19, act. stage.", "14": "Turn 15 of 19, act. commit (owner says commit).", "15": "Turn 16 of 19, assert_screen. pins the label.", "16": "Turn 17 of 19, act. commit (owner says commit).", "17": "Turn 18 of 19, assert_screen. pins the label.", "18": "Turn 19 of 19, finish. the labelled screen is showing; evening over."},  replay: {"0": "Start. validate 5 inputs, register password as secret.", "1": "Step 1 of 11: enter_operator. screen is signon? resolve operator_field.", "2": "Step 2 of 11: enter_password. resolve password_field.", "3": "Step 3 of 11: sign_on. resolve sign_on_button; settle: screen_is desk.", "4": "Step 4 of 11: enter_member. resolve search_field in frame work.", "5": "Step 5 of 11: search. expect inquiry_results or no_match.", "6": "Step 6 of 11: open_member. resolve member_link named {{input.member_number}}.", "7": "Step 7 of 11: open_hold. resolve hold_link in row {{input.share_id}}.", "8": "Step 8 of 11: choose_reason. resolve reason_list.", "9": "Step 9 of 11: review. resolve review_button.", "10": "Step 10 of 11: post_hold. not already done? not in doubt? then resolve post_button.", "11": "Step 11 of 11: read_result. resolve result_line; read.", "12": "Finish. final screen posted is a SUCCESS outcome; extract confirmation."} };
 
   // Architecture: click a box, read about it.
-  var DETAIL = {"cli": "<b>CLI</b> handrail replay runs a capability with no model; handrail observe prints a page's signature and menu. Exit code is the outcome category.", "mcp": "<b>MCP server</b> Milestone 7. One typed tool per approved capability, so an agent calls place_hold like any function and gets a typed result that says whether a retry is safe.", "author": "<b>Authoring loop</b> author/tools.py, middleware.py, agent.py, recorder.py, run.py. LangChain create_agent with a closed three-tool vocabulary: act(index, verb, value), assert_screen(label), finish(outcome). The guard probes every rung, classifies the effect, asks the owner on a commit, and writes the turn to disk before the model speaks again.", "compile": "<b>Compiler + verify gate</b> compile/compiler.py, verify.py. The book becomes a draft card; the writer refuses by line and reports every hole. Literal input values in names and rows become blanks. The gate cooks three plates from a cold kitchen, asks the record store after each, and only then marks the card verified.", "cap": "<b>Capability</b> The recipe card. Pydantic model with 17 validators: every step has a screen and an effect sticker, outcomes are screens, bindings name declared inputs, a commit must be confirmed by a person before leaving draft.", "target": "<b>Target + ladder</b> How a control is described: role, accessible name, verbs it supports, scope, and a cost-ranked ladder of ways to find it again. Cheapest first, never raced.", "effects": "<b>Effect classes</b> read, navigate, stage, commit. Declared, never inferred. A commit without a probe is never retried.", "bind": "<b>Bindings</b> Only {{input.x}} and {{env.X}}. One pass, residue refused. Allowed in entry, step values and target text, so a target can say the row for this share.", "engine": "<b>Replay engine</b> The line cook. Per step: right screen, resolve, journal if mutating, act, settle, journal observed, expected screen. Never raises bare; always returns a typed RunResult with both model counters at zero.", "journal": "<b>Journal</b> Append-only ledger on disk. dispatched before a mutating step, observed after. A commit dispatched and never observed is refused on every later run.", "validate": "<b>Input validation</b> Typed inputs against the capability's InputSpec: patterns, enums, numbers, booleans. Undeclared input refused, not ignored.", "evidence": "<b>Evidence recorder</b> Flight recorder. Per-run directory with a hash-chained log.jsonl, result.json, screenshots. Secrets registered here are masked in everything it writes.", "ladder": "<b>Escalation ladder</b> Milestones 5 and 6. Classifier rung (Laya on-device or Jev hosted), then a bounded model excursion with commit denied, then a person on the same live session. Each rung proposes; the engine verifies.", "proto": "<b>Six verbs</b> open, observe, resolve, act, evaluate, evidence. The waiter. observe returns a numbered menu of legal operations on present controls; the kitchen never sees the DOM.", "browser": "<b>Browser</b> Playwright behind the six verbs. walk.py lists controls and structural paths per frame; operations.py numbers the menu; locators.py proposes rungs and probes them; queries.py translates to Playwright; fingerprint.py answers is this the same control.", "null": "<b>Null surface</b> A scripted stage set for tests. Says what is on screen and what each rung would find. Drives every engine branch in milliseconds.", "term": "<b>Terminal 3270/5250</b> Milestone 4. py3270 behind the same six verbs. A screen is a fixed buffer of fields; settle means keyboard unlocked. The legacy-banking wedge.", "mac": "<b>macOS accessibility</b> Milestone 8. pyobjc, AXPress and AXIdentifier. A learning milestone that proves the schema is surface-neutral.", "plumb": "<b>PLUMBLINE</b> The crash-test bank. Framesets, no ids, no labels, table layout, per-render form tokens, terse messages. Two tenants with different markup. Handrail never imports it; tests do.", "host": "<b>Green-screen host</b> A 3270 host to demo against. Hercules with a sample CICS application is the likely answer; unverified."};
+  var DETAIL = {"cli": "<b>CLI</b> handrail replay runs a capability with no model; handrail observe prints a page's signature and menu. Exit code is the outcome category.", "mcp": "<b>MCP server</b> Milestone 7. One typed tool per approved capability, so an agent calls place_hold like any function and gets a typed result that says whether a retry is safe.", "author": "<b>Authoring loop</b> author/tools.py, middleware.py, agent.py, recorder.py, run.py. LangChain create_agent with a closed three-tool vocabulary: act(index, verb, value), assert_screen(label), finish(outcome). The guard probes every rung, classifies the effect, asks the owner on a commit, and writes the turn to disk before the model speaks again.", "compile": "<b>Compiler + verify gate</b> compile/compiler.py, verify.py. The book becomes a draft card; the writer refuses by line and reports every hole. Literal input values in names and rows become blanks. The gate cooks three plates from a cold kitchen, asks the record store after each, and only then marks the card verified.", "cap": "<b>Capability</b> The recipe card. Pydantic model with 17 validators: every step has a screen and an effect sticker, outcomes are screens, bindings name declared inputs, a commit must be confirmed by a person before leaving draft.", "target": "<b>Target + ladder</b> How a control is described: role, accessible name, verbs it supports, scope, and a cost-ranked ladder of ways to find it again. Cheapest first, never raced.", "effects": "<b>Effect classes</b> read, navigate, stage, commit. Declared, never inferred. A commit without a probe is never retried.", "bind": "<b>Bindings</b> Only {{input.x}} and {{env.X}}. One pass, residue refused. Allowed in entry, step values and target text, so a target can say the row for this share.", "engine": "<b>Replay engine</b> The line cook. Per step: right screen, resolve, journal if mutating, act, settle, journal observed, expected screen. Never raises bare; always returns a typed RunResult with both model counters at zero.", "journal": "<b>Journal</b> Append-only ledger on disk. dispatched before a mutating step, observed after. A commit dispatched and never observed is refused on every later run.", "validate": "<b>Input validation</b> Typed inputs against the capability's InputSpec: patterns, enums, numbers, booleans. Undeclared input refused, not ignored.", "signature": "<b>Screen signatures</b> kernel/signature.py. A screen is its furniture: the set of attribute paths of its elements, never its text. Exact match first; then similar, Jaccard 0.85, one moved chair is still the room; then rung 1.", "evidence": "<b>Evidence recorder</b> Flight recorder. Per-run directory with a hash-chained log.jsonl, result.json, screenshots. Secrets registered here are masked in everything it writes.", "ladder": "<b>Escalation ladder</b> Rung 1 is built: escalate/questions.py is the closed card, escalate/classifier.py the port, three backends (Claude live, Jev and Laya written but unverified), replay/rungs.py asks and re-checks, kernel/episodes.py writes every whistle down. Rungs 2 and 3, the bridge and the person, are milestone 6.", "proto": "<b>Six verbs</b> open, observe, resolve, act, evaluate, evidence. The waiter. observe returns a numbered menu of legal operations on present controls; the kitchen never sees the DOM.", "browser": "<b>Browser</b> Playwright behind the six verbs. walk.py lists controls and structural paths per frame; operations.py numbers the menu; locators.py proposes rungs and probes them; queries.py translates to Playwright; fingerprint.py answers is this the same control.", "null": "<b>Null surface</b> A scripted stage set for tests. Says what is on screen and what each rung would find. Drives every engine branch in milliseconds.", "term": "<b>Terminal 3270/5250</b> Milestone 4. py3270 behind the same six verbs. A screen is a fixed buffer of fields; settle means keyboard unlocked. The legacy-banking wedge.", "mac": "<b>macOS accessibility</b> Milestone 8. pyobjc, AXPress and AXIdentifier. A learning milestone that proves the schema is surface-neutral.", "plumb": "<b>PLUMBLINE</b> The crash-test bank. Framesets, no ids, no labels, table layout, per-render form tokens, terse messages. Two tenants with different markup. Handrail never imports it; tests do.", "host": "<b>Green-screen host</b> A 3270 host to demo against. Hercules with a sample CICS application is the likely answer; unverified."};
   var boxes = document.querySelectorAll('#archboxes .box'), detail = document.getElementById('archdetail');
   function pick(id){ boxes.forEach(function(b){ b.setAttribute('aria-pressed', String(b.getAttribute('data-id') === id)); }); detail.innerHTML = DETAIL[id]; }
   boxes.forEach(function(b){ b.addEventListener('click', function(){ pick(b.getAttribute('data-id')); }); });
@@ -544,6 +604,30 @@ act 3 invoke link "Hold"  row <span class="b">"400118-S0001"</span>   <span clas
   }
   sbtns.forEach(function(b){ b.addEventListener('click', function(){ situ(Number(b.getAttribute('data-k'))); }); });
   situ(0);
+
+
+  // Workflow 6: the ladder, rung one.
+  var DRIFT2 = [
+    {exact:'win', similar:'', rung1:'', say:'Every screen matched exactly. Nobody was asked. Both counters stayed at zero. 11 of 11 controls on their first-choice rung.', res:'SUCCESS', cc:0, held:'0 of 0'},
+    {exact:'on', similar:'win', rung1:'win', say:'The sign-on page gained one banner: 6 of 7 paths, 0.857, tier 2. The frameset pages have a banner in each frame, so they fell below 0.85 and the referee was asked: 6 calls, one per distinct screen, every one at 0.95 and re-checked against the furniture. SUCCESS.', res:'SUCCESS', cc:6, held:'6 of 6'},
+    {exact:'on', similar:'on', rung1:'win', say:'The result line was reworded and given a new class. Exact failed, similar failed at 0.8, the referee named Hold Result at 0.95 with margin 0.9, the furniture overlapped at 0.8, accepted. SUCCESS, llm_calls 0.', res:'SUCCESS', cc:3, held:'3 of 3'},
+    {exact:'on', similar:'on', rung1:'', say:'Same change, no referee on call. Exact failed, similar failed, nothing else to try. The settle on Hold Result never came true and the run ended RECOVERABLE SLOW_LOAD, as the design says it should.', res:'RECOVERABLE, SLOW_LOAD', cc:0, held:'0 of 0'}
+  ];
+  var d2btns = document.querySelectorAll('#drift2 button');
+  function drift2(k){
+    var c = DRIFT2[k];
+    d2btns.forEach(function(b){ b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-k')) === k)); });
+    document.querySelectorAll('#ladder .step').forEach(function(s){
+      var id = s.getAttribute('data-r'); s.classList.remove('on','win');
+      if (id === 'result') { s.classList.add(c.res.indexOf('SUCCESS') === 0 ? 'win' : 'on'); s.querySelector('[data-r2say]').textContent = c.res; return; }
+      if (c[id]) s.classList.add(c[id]);
+    });
+    document.getElementById('cc2').textContent = c.cc;
+    document.getElementById('held2').textContent = c.held;
+    document.getElementById('drift2say').textContent = c.say;
+  }
+  d2btns.forEach(function(b){ b.addEventListener('click', function(){ drift2(Number(b.getAttribute('data-k'))); }); });
+  drift2(2);
 
   // Workflow 3: the journal simulator.
   var J = [], clicks = 0, runs = 0;
