@@ -116,6 +116,10 @@ def parser() -> argparse.ArgumentParser:
     o.add_argument("--allow", action="append", default=[], metavar="HOST:PORT", help="allowed host")
     o.add_argument("--headed", action="store_true")
     o.set_defaults(run=observe)
+
+    from .author.run import register
+
+    register(sub)
     return p
 
 

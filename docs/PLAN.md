@@ -114,18 +114,56 @@ Hold link in the row for *this* share"); the settle check must bind its target t
 click that submits a form in a frame, the old document is still visible until the new one
 commits, so the surface waits for the frame navigation before the engine asks which screen it is.
 
-### 3. Authoring and the compiler
+### 3. Authoring and the compiler — done
+
+What it proves: a model is used once, by picking rows from the menu, and what it produced is a
+card that replays with no model at all.
 
 | file | what it teaches |
 |---|---|
+| `schema/trace.py` | A `Turn`: one line of the order book, pure data, so the compiler can read it |
 | `author/tools.py` | Three tools: `act(index, verb, value)`, `assert_screen(label)`, `finish(outcome)` |
-| `author/middleware.py` | `wrap_tool_call`: probe locators, classify effect, pause on commit, record |
-| `author/agent.py` | `create_agent(model, tools, middleware=[...])`, about 40 lines |
-| `author/recorder.py` | Writes the trace entry before the next model call |
-| `compile/compiler.py` | Trace to `Capability`; refuses on unbound input, secret literal, no surviving locator |
-| `compile/verify.py` | The store-time gate: three clean replays with an independent check |
+| `author/middleware.py` | The guard: probe rungs, classify the effect, ask the owner on a commit, record |
+| `author/agent.py` | LangChain `create_agent` with the three tools; refusals come back as text |
+| `author/recorder.py` | Every turn on disk, masked and hash-chained, before the next model call |
+| `author/run.py` | `handrail author` and `handrail verify`; the owner's "yes" is a terminal prompt |
+| `compile/compiler.py` | The book into a card; refuses by line and reports every hole |
+| `compile/verify.py` | Three plates from a cold kitchen, judged against the record store |
 
-Demo: discover once on the demo site, verify, replay 100 times with zero model calls.
+Run: `make test` — 266 passed, about fifteen seconds. The whole evening also runs offline in
+`tests/author/test_run.py` with a scripted guest on the real mock bank. Demo, live, 2026-10-08:
+
+```bash
+make up
+BASE_URL=http://127.0.0.1:8081 uv run handrail author --goal "..." --id plumbline.place_hold \
+  --entry http://127.0.0.1:8081/signon --entry-template '{{env.BASE_URL}}/signon' \
+  --allow 127.0.0.1:8081 --out capabilities/plumbline-place-hold.authored.json \
+  --input operator_id=dcolewell --input password=plumbline-demo --secret password \
+  --input member_number=400118 --input share_id=400118-S0001 --input reason=LEGAL --by dhawal
+BASE_URL=http://127.0.0.1:8081 uv run handrail verify capabilities/plumbline-place-hold.authored.json \
+  --env BASE_URL=http://127.0.0.1:8081 --trial ... --trial ... --trial ...
+```
+
+claude-sonnet-5 authored the flow in 19 turns and 12 model calls; the compiler wrote 11 steps
+and 7 screens the model named itself; the gate passed three plates for three other members;
+100 replays then ran with `llm_calls=0`, `classifier_calls=0`, drift 11/11 on every one.
+
+Four things the live run taught, each now a test or a rule:
+
+- Claude sends several tool calls in one message and LangChain runs them concurrently. "Fill,
+  fill, click" fired at once clicks an empty form. The guard holds a lock: one guest speaks at a
+  time, in the order the words came out.
+- Two links called Hold meant no rung survived for either. The walker now records the row a
+  control sits in (only in a real grid, one with a header row), the probe looks inside that row,
+  and the compiler writes the row into the target's scope, as a blank when it equals an input.
+- A link named 400118 had its name in the fingerprint, so member 400337 mismatched. When the
+  compiler turns a name into a blank it retakes the fingerprint without the name.
+- Reading back a field you typed into is not an output. Only a read-only control is.
+
+Not done, on purpose: the default classifier is cautious, so every button press is a commit until
+the owner says otherwise at the prompt. `--confirm commit` answers for all of them up front and is
+honest about it; the card then carries four commits where one would do. The classifier rung in
+milestone 5 is where this gets smarter.
 
 ### 4. The terminal surface
 

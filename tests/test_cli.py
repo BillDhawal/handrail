@@ -91,3 +91,12 @@ def test_observe_prints_the_signature_and_the_menu(bank: str, capsys):
     assert code == 0
     assert out.startswith("signature=sha256:")
     assert "invoke button 'F5=Sign On'" in out
+
+
+def test_the_parser_knows_author_and_verify():
+    a = parser().parse_args(
+        ["author", "--goal", "g", "--entry", "http://x", "--id", "i", "--out", "o.json"]
+    )
+    assert (a.command, a.model, a.confirm) == ("author", "anthropic:claude-sonnet-5", None)
+    v = parser().parse_args(["verify", "cap.json", "--trial", "a=1,b=2"])
+    assert (v.command, v.trial) == ("verify", ["a=1,b=2"])

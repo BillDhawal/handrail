@@ -70,3 +70,17 @@ def test_the_control_surface_is_never_faultable(client):
     assert MSG_APP_ERROR in client.get("/member/400118").get_data(as_text=True)
     assert client.post("/__test__/reset").status_code == 200
     assert MSG_APP_ERROR not in client.get("/member/400118").get_data(as_text=True)
+
+
+def test_the_share_status_endpoint_reads_the_store_not_the_screen(monkeypatch):
+    monkeypatch.setenv("HANDRAIL_ALLOW_FAULTS", "1")
+    client = create_app("quarrybrook").test_client()
+    assert client.get("/__test__/share/400226-S0002").get_json()["status"] == "HOLD"
+    assert client.get("/__test__/share/400118-S0001").get_json()["status"] == "ACTIVE"
+    assert client.get("/__test__/share/nope").status_code == 404
+
+
+def test_the_share_status_endpoint_is_off_without_the_flag(monkeypatch):
+    monkeypatch.delenv("HANDRAIL_ALLOW_FAULTS", raising=False)
+    client = create_app("quarrybrook").test_client()
+    assert client.get("/__test__/share/400226-S0002").status_code == 404

@@ -26,8 +26,9 @@ SIGN_ON = {"operator_id": "dcolewell", "password": "plumbline-demo", "reason": "
 def bank() -> Iterator[str]:
     from werkzeug.serving import make_server
 
-    from targetapp.app import create_app
+    from targetapp.app import STORE, create_app
 
+    STORE.reset()  # the store is one object per process; an earlier test may have used it
     server = make_server("127.0.0.1", 0, create_app("quarrybrook"))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     yield f"127.0.0.1:{server.server_port}"

@@ -45,7 +45,7 @@ from .fingerprint import same_control
 from .locators import query_for
 from .operations import build_table
 from .queries import Root, to_locator
-from .walk import DESCRIBE_JS, WALK_JS, control_from, signature_of
+from .walk import DESCRIBE_JS, WALK_JS, Handle, control_from, signature_of
 
 POLL_S = 0.2
 #: How long a click gets to start a navigation before we decide it did not.
@@ -125,7 +125,7 @@ class BrowserSurface:
             await asyncio.sleep(POLL_S)
 
     async def act(self, resolution: Resolution | None, verb: Verb, value: str | None) -> ActResult:
-        locator = cast(Locator | None, resolution.handle if resolution else None)
+        locator = self._locator_of(resolution.handle) if resolution else None
         if verb == "press_key":
             await self.page.keyboard.press(value or "Enter")
         elif verb == "wait":
@@ -170,6 +170,15 @@ class BrowserSurface:
         self._pw = self._browser = self._page = None
 
     # -- helpers ------------------------------------------------------------------
+
+    def _locator_of(self, handle: Any) -> Locator:
+        """A resolution's handle is a locator from `resolve`, or a menu row's frame + selector."""
+        if isinstance(handle, Handle):
+            for frame in self.page.frames:
+                if frame.name == handle.frame:
+                    return frame.locator(handle.selector)
+            raise HandrailError(f"no frame named {handle.frame!r}", ErrorCode.MISSING_CONTROL)
+        return cast(Locator, handle)
 
     async def _click_and_settle(self, locator: Locator) -> None:
         """Click, and if that navigated any frame, let the new document load first.

@@ -15,7 +15,7 @@ pytest.importorskip("playwright")
 
 from handrail.surface.browser.locators import surviving  # noqa: E402
 from handrail.surface.browser.operations import Control  # noqa: E402
-from handrail.surface.browser.queries import FrameProbe  # noqa: E402
+from handrail.surface.browser.queries import BrowserAuthoring, FrameProbe  # noqa: E402
 from handrail.surface.browser.surface import BrowserSurface  # noqa: E402
 
 
@@ -147,3 +147,26 @@ async def test_evidence_has_the_screen_text_and_a_screenshot(waiter: BrowserSurf
     bundle = await waiter.evidence()
     assert "OPERATOR SIGN ON" in bundle.text
     assert bundle.screenshot_png and bundle.screenshot_png[:4] == b"\x89PNG"
+
+
+async def test_a_menu_row_can_be_described_and_probed_for_authoring(waiter: BrowserSurface):
+    ops = (await waiter.observe()).operations
+    row = next(op for op in ops if op.name == "Operator ID" and op.verb == "set_value")
+    authoring = BrowserAuthoring(waiter.page)
+    control = await authoring.describe(row.handle)
+    assert (control.role, control.label, control.attr_name) == ("textbox", "Operator ID", "opid")
+    kept = await surviving(control, authoring.probe(row.handle, control))
+    assert [r.rung for r in kept] == ["label", "native"]
+
+
+async def test_one_hold_link_per_share_survives_when_probed_inside_its_row(waiter: BrowserSurface):
+    await sign_on(waiter)
+    await waiter.open(f"http://{waiter.page.url.split('/')[2]}/member/400118")
+    ops = (await waiter.observe()).operations
+    holds = [op for op in ops if op.name == "Hold"]
+    assert len(holds) == 2  # two shares, two links, same name
+    authoring = BrowserAuthoring(waiter.page)
+    control = await authoring.describe(holds[1].handle)
+    assert control.row == "400118-S0005"
+    kept = await surviving(control, authoring.probe(holds[1].handle, control))
+    assert [r.rung for r in kept] == ["role_name", "text"]

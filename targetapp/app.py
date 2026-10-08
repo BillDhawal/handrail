@@ -110,6 +110,16 @@ def create_app(tenant: str = "quarrybrook") -> Flask:
         )
         return {"armed": True}
 
+    @app.get("/__test__/share/<share_id>")
+    def share_status(share_id: str):
+        """The record store, not the screen: what the verify gate asks after a replay."""
+        if not faults_allowed():
+            return "", 404
+        share = STORE.get_share(share_id)
+        if share is None:
+            return {"share_id": share_id, "status": None}, 404
+        return {"share_id": share.share_id, "status": share.status}
+
     @app.post("/__test__/reset")
     def reset():
         if not faults_allowed():

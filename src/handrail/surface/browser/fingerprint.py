@@ -70,6 +70,11 @@ def fingerprint(control: Control) -> Fingerprint:
     return Fingerprint(over=over, value=_hash(over, control))
 
 
+def fingerprint_over(control: Control, over: list[str]) -> Fingerprint:
+    """Retake the fingerprint over a chosen set of fields: the compiler drops `name` for a blank."""
+    return Fingerprint(over=over, value=_hash(over, control))
+
+
 def same_control(stored: Fingerprint, control: Control) -> bool:
     """At replay time: is the control the ladder found the one that was recorded?"""
     return _hash(stored.over, control) == stored.value

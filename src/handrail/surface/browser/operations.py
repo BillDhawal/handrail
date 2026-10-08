@@ -48,6 +48,8 @@ class Control:
     scope: tuple[str, ...] = ()
     #: Roles from the frame root to the parent, for the fingerprint later.
     ancestors: tuple[str, ...] = ()
+    #: The first cell of the table row this control sits in, if any: "the Hold link in row X".
+    row: str = ""
     disabled: bool = False
     readonly: bool = False
     visible: bool = True

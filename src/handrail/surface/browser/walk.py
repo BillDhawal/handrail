@@ -80,7 +80,15 @@ _HELPERS = r"""
     return r; };
   const visible = el => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el);
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
-  const describe = (el, role) => ({ role, name: nameOf(el, role),
+  const rowOf = el => {
+    // A row key only in a real grid (a table with a header row); a layout table's first
+    // cell is the field's caption, and that is the label rung's business, not a scope.
+    const tr = el.closest('tr'); const table = tr && tr.closest('table');
+    if (!tr || !table || !table.querySelector('th')) return '';
+    const cells = tr.querySelectorAll(':scope > td, :scope > th');
+    if (cells.length < 2 || cells[0].contains(el)) return '';
+    return clean(cells[0].textContent); };
+  const describe = (el, role) => ({ role, name: nameOf(el, role), row: rowOf(el),
     label: ['button', 'link', 'heading'].includes(role) ? '' : captionOf(el),
     attr_name: el.getAttribute('name') || '', test_id: el.getAttribute('data-testid') || '',
     ancestors: ancestorsOf(el), disabled: !!el.disabled, readonly: !!el.readOnly,
@@ -125,6 +133,7 @@ def control_from(frame: str, raw: dict[str, Any]) -> Control:
         test_id=str(raw["test_id"]),
         scope=(frame,) if frame else (),
         ancestors=tuple(str(a) for a in raw["ancestors"]),
+        row=str(raw.get("row", "")),
         disabled=bool(raw["disabled"]),
         readonly=bool(raw["readonly"]),
         visible=bool(raw["visible"]),

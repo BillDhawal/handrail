@@ -1,6 +1,6 @@
 # Handoff — where things stand
 
-**Written:** 2026-10-02, at the end of milestone 2.
+**Written:** 2026-10-08, at the end of milestone 3.
 **For:** the next Claude session working in this folder, and for Dhawal coming back after a break.
 
 ## What this is, in three sentences
@@ -22,6 +22,9 @@ back-office software (banks and credit unions), not as the take-home it started 
 - 2026-09-27: milestones 0 and 1 done. 141 tests, ruff and mypy strict clean.
 - 2026-10-02: milestone 2 done. 204 tests. The hand-written capability replays on PLUMBLINE
   with both model counters zero. The browser extra and Chromium are installed in `.venv`.
+- 2026-10-08: milestone 3 done. 266 tests. claude-sonnet-5 authored the place-hold flow once,
+  the compiler wrote the card, the gate verified it, 100 replays ran with zero model calls.
+  The author extra (LangChain 1.4) is installed; `ANTHROPIC_API_KEY` lives in `.env`.
 
 ## Decisions already made — do not reopen
 
@@ -39,17 +42,19 @@ back-office software (banks and credit unions), not as the take-home it started 
 
 ```
 src/handrail/
-  schema/     errors, bindings, effects, target, capability, results   milestone 0
-  surface/    base (six verbs), null_surface (scripted stage set)     milestone 1
-  surface/browser/  operations, locators, fingerprint, walk, queries, surface   milestone 2
-  replay/     validate, journal, engine                                milestone 1
-  kernel/     evidence (hash-chained log, masking at the writer)       milestone 1
-  cli.py      handrail replay, handrail observe                        milestone 2
-  compile/ escalate/ author/ serve/                                    empty, named
-capabilities/ plumbline-place-hold.json, hand-written, draft          milestone 2
-targetapp/    PLUMBLINE, the mock bank from the prototype (two tenants)
-tests/        204 passing; the invariants live in tests/invariants/
-docs/         DESIGN.md, PLAN.md, this file, prototype/
+  schema/     errors, bindings, effects, target, capability, results, trace   milestones 0, 3
+  surface/    base (six verbs), null_surface (scripted stage set)            milestone 1
+  surface/browser/  operations, locators, fingerprint, walk, queries, surface  milestone 2
+  replay/     validate, journal, engine                                       milestone 1
+  kernel/     evidence (hash-chained log, masking at the writer)              milestone 1
+  author/     tools, middleware, agent, recorder, run                         milestone 3
+  compile/    compiler, verify                                                milestone 3
+  cli.py      handrail replay, observe, author, verify                        milestones 2, 3
+  escalate/ serve/                                                            empty, named
+capabilities/ plumbline-place-hold.json (hand-written), .authored.json (by the model, verified)
+targetapp/    PLUMBLINE, the mock bank (two tenants, and /__test__/share/<id> for the gate)
+tests/        266 passing; the invariants live in tests/invariants/
+docs/         DESIGN.md, PLAN.md, this file, the site (index, five-pictures, as-built), prototype/
 ```
 
 The engine replays the factory capability (`tests/factory.py`, a place-hold flow) on the
@@ -57,7 +62,7 @@ scripted surface and returns `SUCCESS` with `confirmation=HX-829120`, both model
 The test to read first is `tests/replay/test_engine.py::test_a_step_in_doubt_is_never_repeated_across_runs`:
 the double-post bug from the prototype, made impossible by the journal.
 
-## Design choices made during milestones 1 and 2
+## Design choices made during milestones 1 to 3
 
 - **Stage steps are redone on a resumed run; commit steps never are.** Re-typing a field is
   harmless by definition. Without this a run resumed after a crash would skip typing the member
@@ -75,37 +80,51 @@ the double-post bug from the prototype, made impossible by the journal.
 - **A click waits for the frame it navigated.** Otherwise the engine asks "which screen" while
   the old document is still showing. `NAVIGATION_GRACE_MS` in `surface/browser/surface.py`.
 - **No `position` rung is ever proposed.** "The third link" breaks the day a row is added.
+- **The guard is the middleware.** PLAN named LangChain's `wrap_tool_call`; the `Guard` in
+  `author/middleware.py` already probes, classifies, confirms and records before the model hears
+  the answer, and the three tools call it directly. A second fence around the same field was not
+  built.
+- **Tool calls run one at a time.** A lock in the guard, because the model batches calls and the
+  loop runs them concurrently. Without it the sign-on form was clicked empty seven times.
+- **`Turn` lives in `schema/trace.py`.** The compiler must never import from `author/`; the
+  invariant test caught the first draft doing exactly that.
+- **Cautious effect classification.** A button press is a commit until a person says otherwise.
+  The owner may answer commit, navigate, stage or deny at the prompt, and the name is written in.
+- **Row keys come only from real grids.** A table with a header row is a grid; a layout table's
+  first cell is the field's caption and belongs to the label rung.
+- **A blanked name leaves the fingerprint.** The compiler retakes it over role, supports and
+  ancestor roles; that is what makes "the link for this member" the same control for every member.
 
-## What is next — milestone 3, authoring and the compiler
+## What is next — milestone 4, the terminal surface
 
 Files, in order, each with a test first (details in `docs/PLAN.md`):
 
-1. `author/tools.py` — three tools: `act(index, verb, value)`, `assert_screen(label)`,
-   `finish(outcome)`. The model only ever says a row number from the menu.
-2. `author/middleware.py` — `wrap_tool_call`: probe locators with `locators.surviving` and
-   `queries.FrameProbe`, classify the effect, pause on a commit, record the turn.
-3. `author/agent.py` — `create_agent(model, tools, middleware=[...])`, about 40 lines.
-4. `author/recorder.py` — the trace entry is on disk before the next model call.
-5. `compile/compiler.py` — trace to `Capability`; refuses on unbound input, secret literal, no
-   surviving locator. Copies `operations.supports_for` into each target.
-6. `compile/verify.py` — the store-time gate: three clean replays with an independent check.
+1. `surface/terminal/screen.py` — a 3270 screen as a fixed buffer of fields; the signature is
+   exact: the set of protected-field positions and texts.
+2. `surface/terminal/surface.py` — `py3270` behind the same six verbs. Settle is "keyboard
+   unlocked". A field is found by its row and column, or by the label text to its left.
 
-Demo at the end: discover the place-hold flow once on PLUMBLINE, verify, replay 100 times with
-zero model calls. Needs `ANTHROPIC_API_KEY` in `.env`; the first file that touches a model.
+Demo: the same engine and the same schema drive a green-screen session. Needs a 3270 host to
+talk to; see the open question below. The terminal extra (`py3270`) is not installed yet, and
+`x3270` comes from Homebrew.
 
-Before starting: read OpenAdapt's source for the three places this design claims novelty (open
-question below). Milestone 3 is where the comparison starts to matter.
+Alternatively, if no host is at hand, milestone 5 (screen signatures and the classifier rung) can
+go first: it needs only PLUMBLINE and the already-authored card, and it is where the cautious
+"every button is a commit" default gets replaced.
 
-After that: 4 the terminal surface, 5 screen signatures and the classifier rung, 6 bridge and
-human takeover, 7 MCP server, 8 macOS accessibility.
+After that: 5 screen signatures and the classifier rung, 6 bridge and human takeover, 7 MCP
+server, 8 macOS accessibility.
 
 ## Open questions, deliberately not guessed
 
 - Which 3270 host to demo the terminal surface against. Hercules with a sample CICS
   application is the likely answer; unverified.
 - What OpenAdapt (MIT, `github.com/OpenAdaptAI/OpenAdapt`) already does in the three places
-  this design claims to be new: the write-ahead journal, the classifier rung, the typed
-  agent-facing interface. Read its source before milestone 5.
+  this design claims to be new. README-level answer, 2026-10-07: their README mentions no
+  write-ahead journal and no classifier rung; it does have an agent-facing run tool
+  (`openadapt-agent serve --allow-run`) and an independent check of the record store after a run,
+  much like our verify gate. So the journal and the classifier rung still look new; the typed
+  agent interface does not. Source not read yet; do that before milestone 7.
 - Jev's default data retention outside an enterprise agreement. Until known, only redacted text
   leaves the machine.
 
@@ -123,3 +142,10 @@ human takeover, 7 MCP server, 8 macOS accessibility.
   handrail` fixed it. Check `python -c "import handrail"` before trusting a green run there.
 - Playwright's text engine reads a submit button's `value` as its text, so the `text` rung does
   survive on `F5=Sign On`. The live page beat the assumption; the test was corrected.
+- Truncating a log file with `: > file` while a server still writes to it leaves a hole of NUL
+  bytes, and `grep` then prints nothing. Use `strings file | grep`, or restart the server.
+- `STORE` in `targetapp` is one object per process. Two test modules that each start PLUMBLINE in
+  a thread share it; a hold placed by one is seen by the next. Each bank fixture calls
+  `STORE.reset()` first.
+- A scripted fake chat model needs a unique id on every tool call, or LangGraph's router loses
+  its way and raises `KeyError: 'model'`.
