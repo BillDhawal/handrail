@@ -206,3 +206,120 @@ async def test_a_target_named_by_an_input_is_resolved_under_its_bound_name(tmp_p
     )
     assert result.category is OutcomeCategory.SUCCESS
     assert ("invoke", "400118-S0001", None) in surface.actions
+
+
+async def test_a_screen_that_gained_one_element_is_still_recognised_and_logged(tmp_path):
+    # Tier 2 of kernel/signature.py: same furniture plus one chair.
+    furniture = [f"work:path{i}" for i in range(8)]
+    cap = place_hold()
+    cap["screens"]["inquiry"] = {
+        "signature": "sha256:0000000000000000",  # will not match exactly
+        "label": "the member inquiry screen",
+        "paths": furniture,
+    }
+    stage = pages()
+    stage[0].paths = tuple(furniture + ["work:div.banner"])  # 8 of 9 shared: 0.89
+    surface = NullSurface(stage)
+    recorder = Recorder("run_t", root=tmp_path)
+    result = await ReplayEngine(surface, recorder, env=ENV, poll_interval_s=0.001).run(
+        Capability.model_validate(cap), INPUTS
+    )
+    assert result.category is OutcomeCategory.SUCCESS
+    log = (recorder.dir / "log.jsonl").read_text()
+    assert '"event": "screen.similar"' in log and '"screen": "inquiry"' in log
+
+
+class Referee:
+    """A scripted classifier: always this answer, this sure."""
+
+    name = "fake"
+
+    def __init__(self, answer: str, confidence: float = 0.95) -> None:
+        self.answer, self.confidence, self.asked = answer, confidence, []
+
+    async def ask(self, state, question):
+        from handrail.escalate.questions import Verdict
+
+        self.asked.append(question.name)
+        rest = [o for o in question.options if o != self.answer]
+        probs = {self.answer: self.confidence}
+        probs.update({o: (1 - self.confidence) / len(rest) for o in rest})
+        return Verdict(question.name, probs)
+
+
+FURNITURE = [f"work:path{i}" for i in range(10)]
+
+
+def reworded(shared: int) -> tuple[dict, list]:
+    """A capability whose 'posted' screen stores furniture, and a stage set whose final page
+    shares only `shared` of those ten paths: too few for tier 2, enough for the re-check."""
+    cap = place_hold()
+    cap["screens"]["posted"] = {
+        "signature": "sha256:0000000000000000",
+        "label": "the hold was posted",
+        "paths": FURNITURE,
+    }
+    stage = pages()
+    stage[2].paths = tuple(FURNITURE[:shared] + [f"work:new{i}" for i in range(10 - shared)])
+    return cap, stage
+
+
+def with_referee(stage, tmp_path, referee, book=None) -> tuple[ReplayEngine, Recorder]:
+    recorder = Recorder("run_t", root=tmp_path)
+    eng = ReplayEngine(
+        NullSurface(stage),
+        recorder,
+        env=ENV,
+        poll_interval_s=0.001,
+        settle_timeout_ms=50,
+        classifier=referee,
+        episodes=book,
+    )
+    return eng, recorder
+
+
+async def test_a_reworded_screen_is_named_by_the_referee_and_checked_against_the_furniture(
+    tmp_path,
+):
+    from handrail.kernel.episodes import Episodes
+
+    cap, stage = reworded(shared=7)  # 7 of 13: 0.54, below similar, above the re-check
+    book = Episodes()
+    eng, recorder = with_referee(stage, tmp_path, Referee("posted"), book)
+    result = await eng.run(Capability.model_validate(cap), INPUTS)
+    assert result.category is OutcomeCategory.SUCCESS and result.outcome == "posted"
+    assert result.classifier_calls >= 1 and result.llm_calls == 0
+    rows = book.rows(recorder.run_id)
+    assert rows and all(r["accepted"] for r in rows) and rows[0]["held"] == 1
+
+
+async def test_a_confident_referee_is_still_refused_when_the_furniture_disagrees(tmp_path):
+    cap, stage = reworded(shared=3)  # 3 of 17: the referee may be sure, the room is not the room
+    eng, recorder = with_referee(stage, tmp_path, Referee("posted", confidence=0.99))
+    result = await eng.run(Capability.model_validate(cap), INPUTS)
+    assert result.category is not OutcomeCategory.SUCCESS
+    assert result.classifier_calls >= 1
+    assert '"accepted": false' in (recorder.dir / "log.jsonl").read_text()
+
+
+async def test_none_of_these_leaves_the_run_where_it_was(tmp_path):
+    cap, stage = reworded(shared=7)
+    eng, _ = with_referee(stage, tmp_path, Referee("none_of_these"))
+    result = await eng.run(Capability.model_validate(cap), INPUTS)
+    assert result.category is not OutcomeCategory.SUCCESS and result.classifier_calls >= 1
+
+
+async def test_without_a_referee_the_counter_stays_zero_and_the_run_fails_as_before(tmp_path):
+    cap, stage = reworded(shared=7)
+    result = await engine(NullSurface(stage), tmp_path).run(Capability.model_validate(cap), INPUTS)
+    assert result.category is not OutcomeCategory.SUCCESS and result.classifier_calls == 0
+
+
+async def test_the_referee_is_asked_once_per_screen_per_run(tmp_path):
+    cap, stage = reworded(shared=7)
+    referee = Referee("posted")
+    eng, _ = with_referee(stage, tmp_path, referee)
+    result = await eng.run(Capability.model_validate(cap), INPUTS)
+    assert result.category is OutcomeCategory.SUCCESS
+    # settle, expect and the final outcome check all look at the same reworded page
+    assert result.classifier_calls == 1 and len(referee.asked) == 1

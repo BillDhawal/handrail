@@ -32,6 +32,8 @@ class Page:
     reads: dict[str, str] = field(default_factory=dict)
     #: acting on any of these control names turns to the next page.
     advance_on: frozenset[str] = frozenset()
+    #: Report these paths as the structure instead of the ready-made signature.
+    paths: tuple[str, ...] = ()
 
     def present(self, name: str) -> bool:
         return any(n == name and count > 0 for (_, n), count in self.matches.items())
@@ -68,9 +70,8 @@ class NullSurface:
             for i, ((_, n), count) in enumerate(self.page.matches.items())
             if count > 0
         ]
-        return Observation(
-            text=self.page.text, operations=tuple(ops), structure=(self.page.signature,)
-        )
+        structure = self.page.paths or (self.page.signature,)
+        return Observation(text=self.page.text, operations=tuple(ops), structure=structure)
 
     async def resolve(self, target: Target, timeout_ms: int) -> Resolution:
         name = target.name.eq if target.name and target.name.eq else target.role

@@ -45,7 +45,7 @@ from .fingerprint import same_control
 from .locators import query_for
 from .operations import build_table
 from .queries import Root, to_locator
-from .walk import DESCRIBE_JS, WALK_JS, Handle, control_from, signature_of
+from .walk import DESCRIBE_JS, WALK_JS, Handle, control_from, paths_of, signature_of
 
 POLL_S = 0.2
 #: How long a click gets to start a navigation before we decide it did not.
@@ -94,7 +94,7 @@ class BrowserSurface:
         return Observation(
             text="\n".join(t for t in texts if t),
             operations=build_table(controls),
-            structure=(signature_of(frames),),
+            structure=paths_of(frames),
         )
 
     async def resolve(self, target: Target, timeout_ms: int) -> Resolution:

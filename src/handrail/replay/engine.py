@@ -9,8 +9,11 @@ checks the counter it expected to end up at (expect). If any check fails it
 stops and says exactly which check, on which step, expected what, saw what.
 
 No model is consulted anywhere in this file. The two counters in the result,
-``classifier_calls`` and ``llm_calls``, are zero for every run that goes
-through here, and an import guard makes sure this package cannot reach one.
+``classifier_calls`` and ``llm_calls``, are zero for every run that stays on
+the ordinary path, and an import guard makes sure this package cannot reach
+one. When a screen check fails and a referee was handed in, rung one
+(``rungs.py``) may be asked which declared screen this is; the engine checks
+the answer against the stored furniture before believing it, and counts it.
 
 The one rule the cook will not break, even if told to: a commit written as
 "starting" in the ledger with no "done" beside it is never repeated. It is
@@ -23,35 +26,41 @@ definition, so on a resumed run a stage is simply done again.
 from __future__ import annotations
 
 import asyncio
-import re
 import time
 from collections.abc import Mapping
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from ..escalate.classifier import Classifier
+from ..kernel.episodes import Episodes
 from ..kernel.evidence import Recorder
-from ..schema.bindings import BindingError, bind_target, bind_text
+from ..schema.bindings import bind_target, bind_text
 from ..schema.capability import Capability, Step
 from ..schema.effects import EffectClass
 from ..schema.errors import ErrorCode, HandrailError, OutcomeCategory
 from ..schema.results import Drift, ErrorDetail, RunResult, StepReport
-from ..surface.base import Observation, Resolution, Surface
+from ..surface.base import Resolution, Surface
 from .journal import Journal
-from .validate import validate_inputs
+from .prepare import outputs, prepare
+from .rungs import RungOne
+from .screens import Finished, Screens
 
 DEFAULT_SETTLE_TIMEOUT_MS = 8000
 
 
-def observed_signature(observation: Observation) -> str:
-    """Milestone 1: the surface's structure joined. Milestone 5 replaces this."""
-    return "|".join(observation.structure)
+@dataclass
+class _Run:
+    """Everything one run accumulates. Built fresh in `run`, so a reused engine never mixes two."""
 
-
-class _Finished(Exception):
-    """The run reached an outcome screen; raised to unwind the step loop cleanly."""
-
-    def __init__(self, outcome: str) -> None:
-        self.outcome = outcome
+    capability: Capability
+    journal: Journal
+    params: dict[str, Any] = field(default_factory=dict)
+    reports: list[StepReport] = field(default_factory=list)
+    drift: Drift = field(default_factory=Drift)
+    read_values: dict[str, str] = field(default_factory=dict)
+    rung1: RungOne | None = None
+    screens: Screens | None = None
 
 
 class ReplayEngine:
@@ -62,27 +71,30 @@ class ReplayEngine:
         env: Mapping[str, str] | None = None,
         poll_interval_s: float = 0.25,
         settle_timeout_ms: int = DEFAULT_SETTLE_TIMEOUT_MS,
+        classifier: Classifier | None = None,
+        episodes: Episodes | None = None,
     ) -> None:
         self.surface = surface
         self.recorder = recorder
         self.env = dict(env or {})
         self.poll_interval_s = poll_interval_s
         self.settle_timeout_ms = settle_timeout_ms
+        self.classifier = classifier
+        self.episodes = episodes
 
     async def run(
         self, capability: Capability, inputs: dict[str, Any], journal: Journal | None = None
     ) -> RunResult:
         started, clock = datetime.now(UTC), time.monotonic()
-        # Per-run state lives here, not on self, so a reused engine cannot mix two runs.
-        journal = journal or Journal()
-        reports: list[StepReport] = []
-        drift = Drift()
-        read_values: dict[str, str] = {}
+        run = _Run(capability, journal or Journal())
+        if self.classifier is not None:
+            run.rung1 = RungOne(self.classifier, self.recorder, capability, self.episodes)
+        run.screens = screens = Screens(self.surface, self.recorder, capability, run.rung1)
         outcome: str | None = None
         error: ErrorDetail | None = None
 
         def finish(category: OutcomeCategory, code: ErrorCode) -> RunResult:
-            outputs = self._outputs(capability, outcome, read_values) if outcome else {}
+            produced = outputs(capability, outcome, run.read_values) if outcome else {}
             result = RunResult(
                 run_id=self.recorder.run_id,
                 capability_id=capability.id,
@@ -92,28 +104,33 @@ class ReplayEngine:
                 category=category,
                 code=code,
                 outcome=outcome,
-                outputs=outputs,
+                outputs=produced,
                 error=error,
-                steps=reports,
-                drift=drift,
+                steps=run.reports,
+                drift=run.drift,
+                classifier_calls=run.rung1.calls if run.rung1 else 0,
             )
             self.recorder.write_json("result.json", result)
             self.recorder.log("replay.finish", category=category.value, code=code.value)
+            if self.episodes is not None:
+                held = category in (OutcomeCategory.SUCCESS, OutcomeCategory.BUSINESS_OUTCOME)
+                self.episodes.settle(self.recorder.run_id, category.value, held)
             return result
 
         try:
-            params = self._prepare(capability, inputs)
-            await self.surface.open(bind_text(capability.surface.entry, params, self.env))
+            self._compatible(capability)
+            run.params = prepare(capability, inputs, self.recorder, self.env)
+            await self.surface.open(bind_text(capability.surface.entry, run.params, self.env))
             for step in capability.steps:
-                await self._run_step(capability, step, params, journal, reports, drift, read_values)
-            final = await self._screen(capability)
+                await self._run_step(run, step)
+            final = await screens.name(list(capability.outcomes), None)
             if final not in capability.outcomes:
                 raise HandrailError(
                     f"the run ended on {final!r}, which is not an outcome",
                     ErrorCode.SCREEN_MISMATCH,
                 )
-            raise _Finished(final)
-        except _Finished as done:
+            raise Finished(final)
+        except Finished as done:
             outcome = done.outcome
             declared = capability.outcomes[outcome]
             return finish(declared.category, declared.code)
@@ -131,44 +148,28 @@ class ReplayEngine:
 
     # -- before the first step ----------------------------------------------------
 
-    def _prepare(self, capability: Capability, inputs: dict[str, Any]) -> dict[str, Any]:
+    def _compatible(self, capability: Capability) -> None:
         if self.surface.kind not in ("null", capability.surface.kind):
             raise HandrailError(
                 f"capability needs a {capability.surface.kind} surface, got {self.surface.kind}",
                 ErrorCode.SURFACE_INCOMPATIBLE,
             )
-        params = validate_inputs(capability, inputs)
-        for spec in capability.inputs:
-            if spec.sensitivity == "secret" and spec.name in params:
-                self.recorder.add_secret(str(params[spec.name]))
-        try:
-            entry = bind_text(capability.surface.entry, params, self.env)
-        except BindingError as exc:
-            raise HandrailError(str(exc), ErrorCode.INVALID_INPUT) from exc
-        self.recorder.log("replay.start", capability=capability.ref, entry=entry, inputs=params)
-        return params
 
     # -- one step -----------------------------------------------------------------
 
-    async def _run_step(
-        self,
-        capability: Capability,
-        step: Step,
-        params: dict[str, Any],
-        journal: Journal,
-        reports: list[StepReport],
-        drift: Drift,
-        read_values: dict[str, str],
-    ) -> None:
+    async def _run_step(self, run: _Run, step: Step) -> None:
         clock = time.monotonic()
+        capability, journal, params = run.capability, run.journal, run.params
         self.recorder.log("step.start", step=step.id, verb=step.op.verb, effect=step.effect.kind)
 
-        await self._expect_screen(capability, step.screen, step.id)
+        screens = run.screens
+        assert screens is not None
+        await screens.expect(step.screen, step.id)
         journal.reached(step.screen)
 
         if step.effect.kind is EffectClass.COMMIT:
             if journal.already_done(step.id):
-                reports.append(StepReport(step_id=step.id, status="already_done"))
+                run.reports.append(StepReport(step_id=step.id, status="already_done"))
                 return
             if journal.in_doubt(step.id):
                 raise HandrailError(
@@ -184,18 +185,18 @@ class ReplayEngine:
                 resolution = await self.surface.resolve(target, self.settle_timeout_ms)
             except HandrailError as exc:
                 raise HandrailError(exc.message, exc.code, step.id) from exc
-            drift.steps_resolved += 1
+            run.drift.steps_resolved += 1
             if resolution.rung == capability.targets[step.target].ladder[0].rung:
-                drift.first_choice += 1
+                run.drift.first_choice += 1
 
         value = bind_text(step.op.value, params, self.env) if step.op.value else None
         if step.effect.is_mutating:
             journal.dispatch(step.id)  # on disk before the surface is touched
         result = await self.surface.act(resolution, step.op.verb, value)
         if step.op.verb == "read" and result.value is not None:
-            read_values[step.id] = result.value
+            run.read_values[step.id] = result.value
 
-        if not await self._settled(capability, step, params):
+        if not await self._settled(run, step):
             raise HandrailError(
                 f"{step.settle.kind} never came true after {step.id}", ErrorCode.SLOW_LOAD, step.id
             )
@@ -203,16 +204,16 @@ class ReplayEngine:
             journal.observe(step.id)
 
         if step.expect is not None:
-            seen = await self._screen(capability)
+            seen = await screens.name(step.expect.screen_in, step.id)
             if seen not in step.expect.screen_in:
                 raise HandrailError(
                     f"after {step.id} expected one of {step.expect.screen_in}, saw {seen!r}",
                     ErrorCode.SCREEN_MISMATCH,
                     step.id,
                 )
-            self._finish_if_outcome(capability, seen)
+            screens.finish_if_outcome(seen)
 
-        reports.append(
+        run.reports.append(
             StepReport(
                 step_id=step.id,
                 status="ok",
@@ -222,67 +223,35 @@ class ReplayEngine:
         )
         self.recorder.log("step.ok", step=step.id, ms=int((time.monotonic() - clock) * 1000))
 
-    # -- screens ------------------------------------------------------------------
+    # -- settling ------------------------------------------------------------------
 
-    async def _screen(self, capability: Capability) -> str:
-        """Name the screen we are on, or return the raw signature if it is none we know."""
-        sig = observed_signature(await self.surface.observe())
-        for name, screen in capability.screens.items():
-            if screen.signature == sig:
-                return name
-        return sig
+    async def _settled(self, run: _Run, step: Step) -> bool:
+        """Poll the settle condition deterministically; at the deadline, one word from the referee.
 
-    async def _expect_screen(self, capability: Capability, expected: str, step_id: str) -> None:
-        seen = await self._screen(capability)
-        if seen == expected:
-            return
-        # The application may have answered early: "already held" instead of the form.
-        self._finish_if_outcome(capability, seen)
-        raise HandrailError(
-            f"step {step_id} needs screen {expected!r}, but the application shows {seen!r}",
-            ErrorCode.SCREEN_MISMATCH,
-            step_id,
-        )
-
-    def _finish_if_outcome(self, capability: Capability, seen: str) -> None:
-        declared = capability.outcomes.get(seen)
-        if declared is not None and declared.category is not OutcomeCategory.SUCCESS:
-            raise _Finished(seen)
-
-    async def _settled(self, capability: Capability, step: Step, params: dict[str, Any]) -> bool:
-        s = step.settle
+        A referee is asked once, not on every poll.
+        """
+        capability, s, screens = run.capability, step.settle, run.screens
+        assert screens is not None
         if s.kind == "target_present":
             nxt = capability.step(s.step or step.id)
-            target = bind_target(capability.targets[nxt.target or ""], params, self.env)
+            target = bind_target(capability.targets[nxt.target or ""], run.params, self.env)
             condition = f"target_present:{target.name.eq if target.name else target.role}"
         elif s.kind == "screen_is":
-            condition = f"screen_is:{capability.screens[s.screen or step.screen].signature}"
+            condition = f"screen:{s.screen or step.screen}"
         else:
             condition = "keyboard_unlocked"
         deadline = time.monotonic() + self.settle_timeout_ms / 1000
         while True:
-            if await self.surface.evaluate(condition):
+            if condition.startswith("screen:"):
+                settled = await screens.name([], None) == condition[len("screen:") :]
+            else:
+                settled = await self.surface.evaluate(condition)
+            if settled:
                 return True
             if time.monotonic() >= deadline:
-                return False
+                break
             await asyncio.sleep(self.poll_interval_s)
-
-    # -- outputs ------------------------------------------------------------------
-
-    @staticmethod
-    def _outputs(
-        capability: Capability, outcome: str, read_values: dict[str, str]
-    ) -> dict[str, Any]:
-        out: dict[str, Any] = {}
-        for spec in capability.outputs:
-            if spec.produced_on and outcome not in spec.produced_on:
-                continue
-            raw = read_values.get(spec.source.step)
-            if raw is None:
-                continue
-            if spec.source.extract:
-                found = re.search(spec.source.extract, raw)
-                out[spec.name] = found.group(1) if found else None
-            else:
-                out[spec.name] = raw
-        return out
+        if condition.startswith("screen:"):
+            wanted = condition[len("screen:") :]
+            return await screens.name([wanted], step.id) == wanted
+        return False

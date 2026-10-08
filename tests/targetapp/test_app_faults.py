@@ -84,3 +84,35 @@ def test_the_share_status_endpoint_is_off_without_the_flag(monkeypatch):
     monkeypatch.delenv("HANDRAIL_ALLOW_FAULTS", raising=False)
     client = create_app("quarrybrook").test_client()
     assert client.get("/__test__/share/400226-S0002").status_code == 404
+
+
+def _arm(client, fault: str) -> None:
+    client.post("/__test__/arm_fault", json={"fault": fault, "on_path": "/", "once": False})
+
+
+def test_minor_drift_adds_a_banner_to_every_page_and_stays_armed(monkeypatch):
+    monkeypatch.setenv("HANDRAIL_ALLOW_FAULTS", "1")
+    client = create_app("quarrybrook").test_client()
+    _arm(client, "drift_minor")
+    for _ in range(2):
+        assert 'class="promo"' in client.get("/signon").get_data(as_text=True)
+    client.post("/__test__/reset")
+    assert 'class="promo"' not in client.get("/signon").get_data(as_text=True)
+
+
+def test_reword_drift_changes_the_hold_result_line_and_its_class(monkeypatch):
+    monkeypatch.setenv("HANDRAIL_ALLOW_FAULTS", "1")
+    client = create_app("quarrybrook").test_client()
+    _arm(client, "drift_reword")
+    with client.session_transaction() as sess:
+        sess["opid"] = "dcolewell"
+    html = client.post(
+        "/hold/post", data={"share": "400118-S0001", "rsn": "LEGAL", "nt": ""}
+    ).get_data(as_text=True)
+    assert "HOLD HAS BEEN PLACED" in html and "HOLD POSTED" not in html
+    assert 'class="note">HOLD HAS BEEN PLACED' in html
+    html = client.post(
+        "/hold/post", data={"share": "400226-S0002", "rsn": "LEGAL", "nt": ""}
+    ).get_data(as_text=True)
+    assert 'class="note">SHARE IS CURRENTLY HELD' in html
+    client.post("/__test__/reset")  # ARMED is one dict per process; leave it clean

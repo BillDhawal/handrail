@@ -59,6 +59,7 @@ class AuthoringResult:
     trace: list[Turn]
     screens: dict[str, str]
     model_calls: int
+    paths: dict[str, tuple[str, ...]] = field(default_factory=dict)
     messages: list[Any] = field(default_factory=list)
 
 
@@ -125,6 +126,7 @@ async def author(
         outcome=session.outcome,
         trace=list(session.trace),
         screens=dict(session.screens),
+        paths=dict(session.paths),
         model_calls=sum(isinstance(m, AIMessage) for m in messages) or max_turns,
         messages=messages,
     )

@@ -32,6 +32,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..kernel.signature import take
 from ..schema.bindings import BindingError, bind_text
 from ..schema.target import TARGETED_VERBS, Verb
 from ..schema.trace import Turn
@@ -55,6 +56,8 @@ class Session:
     trace: list[Turn] = field(default_factory=list)
     #: label -> signature, as asserted by the model.
     screens: dict[str, str] = field(default_factory=dict)
+    #: label -> the paths that signature was taken over.
+    paths: dict[str, tuple[str, ...]] = field(default_factory=dict)
     observation: Observation | None = None
     outcome: str | None = None
 
@@ -63,7 +66,7 @@ class Session:
         return self.outcome is not None
 
     def signature(self) -> str:
-        return "|".join(self.observation.structure) if self.observation else ""
+        return take(self.observation.structure).value if self.observation else ""
 
     async def look(self) -> str:
         """Refresh the menu and return what the model sees: screen text, then numbered rows."""
@@ -141,6 +144,7 @@ async def assert_screen(session: Session, label: str) -> str:
         if sig == signature and other != label:
             raise ToolRefused(f"this screen is already labelled {other!r}")
     session.screens[label] = signature
+    session.paths[label] = tuple(session.observation.structure) if session.observation else ()
     session._record(
         Turn(
             seq=len(session.trace) + 1,

@@ -57,6 +57,7 @@ class Source:
     values: dict[str, Any]  # the values used during authoring, for finding literals
     screens: dict[str, str]  # label -> signature, as asserted
     trace: list[Turn]
+    paths: dict[str, tuple[str, ...]] = field(default_factory=dict)  # label -> its paths
     allowed_hosts: list[str] = field(default_factory=list)
     version: str = "0.1.0"
     surface_kind: str = "browser"
@@ -210,7 +211,11 @@ class _Writer:
                 {**o, "produced_on": [self.outcome]} if self.outcome else o for o in self.outputs
             ],
             "screens": {
-                label: {"signature": sig, "label": label.replace("_", " ")}
+                label: {
+                    "signature": sig,
+                    "label": label.replace("_", " "),
+                    "paths": list(src.paths.get(label, ())),
+                }
                 for label, sig in src.screens.items()
             },
             "targets": self.targets,

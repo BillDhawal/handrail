@@ -28,10 +28,11 @@ def bank() -> Iterator[str]:
 
     from werkzeug.serving import make_server
 
-    from targetapp.app import STORE, create_app
+    from targetapp.app import ARMED, STORE, create_app
 
     os.environ["HANDRAIL_ALLOW_FAULTS"] = "1"  # the record-store endpoint is behind this flag
     STORE.reset()  # the store is one object per process; an earlier test may have used it
+    ARMED.clear()
     server = make_server("127.0.0.1", 0, create_app("quarrybrook"))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     yield f"127.0.0.1:{server.server_port}"

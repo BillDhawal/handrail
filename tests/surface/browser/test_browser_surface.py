@@ -8,6 +8,7 @@ from collections.abc import Iterator
 
 import pytest
 
+from handrail.kernel.signature import take
 from handrail.schema.errors import ErrorCode, HandrailError
 from handrail.schema.target import RUNG_COST, Target
 
@@ -23,8 +24,10 @@ from handrail.surface.browser.surface import BrowserSurface  # noqa: E402
 def bank() -> Iterator[str]:
     from werkzeug.serving import make_server
 
-    from targetapp.app import create_app
+    from targetapp.app import ARMED, STORE, create_app
 
+    STORE.reset()
+    ARMED.clear()
     server = make_server("127.0.0.1", 0, create_app("quarrybrook"))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     yield f"127.0.0.1:{server.server_port}"
@@ -121,7 +124,7 @@ async def test_evaluate_answers_at_once_without_waiting(waiter: BrowserSurface):
     started = time.monotonic()
     assert await waiter.evaluate("target_present:F5=Sign On")
     assert not await waiter.evaluate("target_present:F99=Nope")
-    assert await waiter.evaluate("screen_is:" + (await waiter.observe()).structure[0])
+    assert await waiter.evaluate("screen_is:" + take((await waiter.observe()).structure).value)
     assert time.monotonic() - started < 2
 
 

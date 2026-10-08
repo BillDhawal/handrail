@@ -1,6 +1,6 @@
 # Handoff — where things stand
 
-**Written:** 2026-10-08, at the end of milestone 3.
+**Written:** 2026-10-08, at the end of milestone 5 (milestone 4, the terminal, is skipped until a 3270 host is at hand).
 **For:** the next Claude session working in this folder, and for Dhawal coming back after a break.
 
 ## What this is, in three sentences
@@ -25,6 +25,9 @@ back-office software (banks and credit unions), not as the take-home it started 
 - 2026-10-08: milestone 3 done. 266 tests. claude-sonnet-5 authored the place-hold flow once,
   the compiler wrote the card, the gate verified it, 100 replays ran with zero model calls.
   The author extra (LangChain 1.4) is installed; `ANTHROPIC_API_KEY` lives in `.env`.
+- 2026-10-08, later: milestone 5 done. 299 tests. Signatures are tiered, the classifier port
+  has three backends (Claude live, Jev and Laya unverified), rung one names a reworded screen
+  and re-checks it, every whistle lands in `episodes.db`. Milestone 4 was skipped: no 3270 host.
 
 ## Decisions already made — do not reopen
 
@@ -45,15 +48,16 @@ src/handrail/
   schema/     errors, bindings, effects, target, capability, results, trace   milestones 0, 3
   surface/    base (six verbs), null_surface (scripted stage set)            milestone 1
   surface/browser/  operations, locators, fingerprint, walk, queries, surface  milestone 2
-  replay/     validate, journal, engine                                       milestone 1
-  kernel/     evidence (hash-chained log, masking at the writer)              milestone 1
+  replay/     validate, journal, engine, prepare, screens, rungs             milestones 1, 5
+  kernel/     evidence, signature (tiered match), episodes (SQLite notebook) milestones 1, 5
   author/     tools, middleware, agent, recorder, run                         milestone 3
   compile/    compiler, verify                                                milestone 3
-  cli.py      handrail replay, observe, author, verify                        milestones 2, 3
-  escalate/ serve/                                                            empty, named
-capabilities/ plumbline-place-hold.json (hand-written), .authored.json (by the model, verified)
-targetapp/    PLUMBLINE, the mock bank (two tenants, and /__test__/share/<id> for the gate)
-tests/        266 passing; the invariants live in tests/invariants/
+  escalate/   questions, classifier (the port), backends/{claude,jev,laya}    milestone 5
+  cli.py      handrail replay, observe, author, verify, episodes              milestones 2, 3, 5
+  serve/                                                                      empty, named
+capabilities/ plumbline-place-hold.json (hand-written), .authored.json (model, verified, with paths)
+targetapp/    PLUMBLINE: two tenants, /__test__/share/<id>, and drift faults drift_minor, drift_reword
+tests/        299 passing; the invariants live in tests/invariants/
 docs/         DESIGN.md, PLAN.md, this file, the site (index, five-pictures, as-built), prototype/
 ```
 
@@ -62,7 +66,7 @@ scripted surface and returns `SUCCESS` with `confirmation=HX-829120`, both model
 The test to read first is `tests/replay/test_engine.py::test_a_step_in_doubt_is_never_repeated_across_runs`:
 the double-post bug from the prototype, made impossible by the journal.
 
-## Design choices made during milestones 1 to 3
+## Design choices made during milestones 1 to 5
 
 - **Stage steps are redone on a resumed run; commit steps never are.** Re-typing a field is
   harmless by definition. Without this a run resumed after a crash would skip typing the member
@@ -94,31 +98,40 @@ the double-post bug from the prototype, made impossible by the journal.
   first cell is the field's caption and belongs to the label rung.
 - **A blanked name leaves the fingerprint.** The compiler retakes it over role, supports and
   ancestor roles; that is what makes "the link for this member" the same control for every member.
+- **A verdict is never believed on its own.** Rung one accepts a referee's answer only above
+  the card's threshold *and* when the chosen screen's stored paths overlap the page at 0.5 or
+  more. A screen with no stored paths cannot be re-checked, so no verdict for it is ever acted on.
+- **A referee is asked once per screen per run.** The memo lives in `replay/rungs.py`.
+- **`held` means the run ended well.** An accepted verdict is marked held when the run ends in
+  SUCCESS or a business outcome; that is the ground truth the calibration table uses.
+- **The Claude backend numbers its options.** Labels are free text; schema keys are not.
 
-## What is next — milestone 4, the terminal surface
+## What is next — milestone 6, the bridge and the human; or 4 if a host turns up
 
 Files, in order, each with a test first (details in `docs/PLAN.md`):
 
-1. `surface/terminal/screen.py` — a 3270 screen as a fixed buffer of fields; the signature is
-   exact: the set of protected-field positions and texts.
-2. `surface/terminal/surface.py` — `py3270` behind the same six verbs. Settle is "keyboard
-   unlocked". A field is found by its row and column, or by the label text to its left.
+1. `escalate/bridge.py` — rung two: a bounded authoring run from the current screen, using the
+   three-line card with `commit` denied, that must end by naming a declared screen the engine
+   then verifies. Everything it needs exists: `author/tools.py`, the guard, `screens.name`.
+2. `kernel/control.py` — the ownership token: `AUTOMATION_RUNNING`, `PAUSED`, `HUMAN_CONTROL`,
+   `ABORTED`.
+3. `serve/console.py` — the smallest page that pauses, takes over, and hands back.
 
-Demo: the same engine and the same schema drive a green-screen session. Needs a 3270 host to
-talk to; see the open question below. The terminal extra (`py3270`) is not installed yet, and
-`x3270` comes from Homebrew.
+Also pending from milestone 5: wire `which_control` into resolve. It needs the replay surface to
+describe a menu row (today only `BrowserAuthoring` can), so the fingerprint re-check can run.
 
-Alternatively, if no host is at hand, milestone 5 (screen signatures and the classifier rung) can
-go first: it needs only PLUMBLINE and the already-authored card, and it is where the cautious
-"every button is a commit" default gets replaced.
+Demo: arm `drift_reword` with a bigger change than the referee can place, watch the bridge
+recover it; then a worse one, and take over by hand.
 
-After that: 5 screen signatures and the classifier rung, 6 bridge and human takeover, 7 MCP
-server, 8 macOS accessibility.
+After that: 7 MCP server, 8 macOS accessibility, and 4 the terminal when a 3270 host is found.
 
 ## Open questions, deliberately not guessed
 
 - Which 3270 host to demo the terminal surface against. Hercules with a sample CICS
-  application is the likely answer; unverified.
+  application is the likely answer; unverified. Milestone 4 waits on this.
+- Laya on this machine: the checkpoint download did not fit (the disk was at 96%). The backend
+  is written against the library's `decide` API and untested. Jev is written against the
+  TypeSafe SDK's `system_one` and untested: no `TYPESAFE_API_KEY`.
 - What OpenAdapt (MIT, `github.com/OpenAdaptAI/OpenAdapt`) already does in the three places
   this design claims to be new. README-level answer, 2026-10-07: their README mentions no
   write-ahead journal and no classifier rung; it does have an agent-facing run tool
@@ -149,3 +162,10 @@ server, 8 macOS accessibility.
   `STORE.reset()` first.
 - A scripted fake chat model needs a unique id on every tool call, or LangGraph's router loses
   its way and raises `KeyError: 'model'`.
+- Claude batches tool calls and LangChain runs them concurrently. Without the guard's lock the
+  sign-on form was clicked empty seven times. The bank's own request log is what showed it.
+- `targetapp.ARMED` is one dict per process, like `STORE`. A test that arms a fault with
+  `once=false` must reset it, or the next test module replays against a drifted bank.
+- A structured-output schema's property names must be identifiers. "Hold Result" is not.
+- A card without stored paths cannot climb the ladder. Anything authored before 2026-10-08 needs
+  re-authoring, or `paths` filled in from a live walk.

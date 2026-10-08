@@ -112,6 +112,7 @@ async def author_command(args: argparse.Namespace, model: Any = None) -> int:
         inputs=[{"name": n, **({"sensitivity": "secret"} if n in secrets else {})} for n in values],
         values=values,
         screens=result.screens,
+        paths=result.paths,
         trace=result.trace,
         allowed_hosts=list(args.allow),
     )

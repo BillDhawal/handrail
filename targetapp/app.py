@@ -8,6 +8,7 @@ association. Forms are table-based and their controls are identified only by the
 from __future__ import annotations
 
 import os
+import re
 import secrets
 import time
 
@@ -86,6 +87,8 @@ def create_app(tenant: str = "quarrybrook") -> Flask:
         if not request.path.startswith(on_path):
             return None
         fault = str(ARMED.get("fault", ""))
+        if fault.startswith("drift"):
+            return None  # drift is applied to the normal page on the way out, below
         if ARMED.get("once", True):
             ARMED.clear()
         if fault == "slow":
@@ -94,6 +97,37 @@ def create_app(tenant: str = "quarrybrook") -> Flask:
         if fault == "dialog":
             return render_template("dialog.html", text=MSG_DIALOG, back=request.path)
         return render_template("fault.html", text=FAULT_TEXT.get(fault, MSG_APP_ERROR))
+
+    @app.after_request
+    def drift(response):  # type: ignore[no-untyped-def]
+        """The application changed under the capability: a banner, or a reworded result.
+
+        `drift_minor` adds a promo banner to every page: one more element, the same
+        screen. `drift_reword` rewrites the hold result: the message line gets a new
+        class and new words, so the screen's furniture no longer matches and only a
+        reader of the text can say which result it is. Stays armed until reset.
+        """
+        fault = str(ARMED.get("fault", ""))
+        if not faults_allowed() or not fault.startswith("drift"):
+            return response
+        is_html = response.content_type.startswith("text/html")
+        if request.path.startswith("/__test__/") or not is_html:
+            return response
+        html = response.get_data(as_text=True)
+        if fault == "drift_minor":
+            banner = '<div class="promo">RATES UPDATED - SEE BULLETIN 14</div>\n'
+            top = '<div class="hdr">PLUMBLINE'
+            html = html.replace(top, banner + top, 1)
+        elif fault == "drift_reword" and request.path == "/hold/post":
+            html = html.replace("HOLD POSTED", "HOLD HAS BEEN PLACED")
+            html = html.replace(MSG_ALREADY_HELD, "SHARE IS CURRENTLY HELD - NOTHING CHANGED")
+            html = re.sub(
+                r'<div class="(?:hdr|msg)">([^<]*(?:PLACED|CURRENTLY HELD)[^<]*)</div>',
+                r'<div class="note">\1</div>',
+                html,
+            )
+        response.set_data(html)
+        return response
 
     @app.post("/__test__/arm_fault")
     def arm_fault():

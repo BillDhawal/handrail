@@ -50,6 +50,9 @@ class OutputSpec(_Model):
 class Screen(_Model):
     signature: str  # structural, never a text literal
     label: str  # one sentence a person, or a closed-set classifier, can read
+    #: The attribute paths the signature was taken over. With them, a screen that gained a
+    #: banner still matches (kernel/signature.py tier 2); without them, only an exact match.
+    paths: list[str] = Field(default_factory=list)
 
 
 class Op(_Model):

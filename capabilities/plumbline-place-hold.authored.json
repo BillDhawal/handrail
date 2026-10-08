@@ -56,31 +56,95 @@
   "screens": {
     "Operator Sign On": {
       "signature": "sha256:2784006a9f88b7ec",
-      "label": "Operator Sign On"
+      "label": "Operator Sign On",
+      "paths": [
+        ":div.hdr",
+        ":form/table.box",
+        ":form/table.box/tbody/tr/td/input.btn",
+        ":form/table.box/tbody/tr/td/input[opid]",
+        ":form/table.box/tbody/tr/td/input[pw]",
+        ":form/table.box/tbody/tr/td/select[br]"
+      ]
     },
     "Member Inquiry": {
       "signature": "sha256:600f0fd50430de9d",
-      "label": "Member Inquiry"
+      "label": "Member Inquiry",
+      "paths": [
+        "menu:div.hdr",
+        "menu:table.grid",
+        "menu:table.grid/tbody/tr/td/a",
+        "work:div.hdr",
+        "work:form/table.box",
+        "work:form/table.box/tbody/tr/td/input.btn",
+        "work:form/table.box/tbody/tr/td/input[sval]",
+        "work:form/table.box/tbody/tr/td/select[sby]"
+      ]
     },
     "Member Inquiry Results": {
       "signature": "sha256:b21a3899297f810f",
-      "label": "Member Inquiry Results"
+      "label": "Member Inquiry Results",
+      "paths": [
+        "menu:div.hdr",
+        "menu:table.grid",
+        "menu:table.grid/tbody/tr/td/a",
+        "work:div.hdr",
+        "work:form/table.box",
+        "work:form/table.box/tbody/tr/td/input.btn",
+        "work:form/table.box/tbody/tr/td/input[sval]",
+        "work:form/table.box/tbody/tr/td/select[sby]",
+        "work:table.grid",
+        "work:table.grid/tbody/tr/td/a"
+      ]
     },
     "Member Record": {
       "signature": "sha256:a89ebfb282a5f92c",
-      "label": "Member Record"
+      "label": "Member Record",
+      "paths": [
+        "menu:div.hdr",
+        "menu:table.grid",
+        "menu:table.grid/tbody/tr/td/a",
+        "work:div.hdr",
+        "work:table.box",
+        "work:table.grid",
+        "work:table.grid/tbody/tr/td/a"
+      ]
     },
     "Place Account Hold": {
       "signature": "sha256:10302c3dd475b853",
-      "label": "Place Account Hold"
+      "label": "Place Account Hold",
+      "paths": [
+        "menu:div.hdr",
+        "menu:table.grid",
+        "menu:table.grid/tbody/tr/td/a",
+        "work:div.hdr",
+        "work:form/table.box",
+        "work:form/table.box/tbody/tr/td/input.btn",
+        "work:form/table.box/tbody/tr/td/select[rsn]",
+        "work:form/table.box/tbody/tr/td/textarea[nt]"
+      ]
     },
     "Hold Review": {
       "signature": "sha256:b4388ed6786af26d",
-      "label": "Hold Review"
+      "label": "Hold Review",
+      "paths": [
+        "menu:div.hdr",
+        "menu:table.grid",
+        "menu:table.grid/tbody/tr/td/a",
+        "work:div.hdr",
+        "work:div.warn",
+        "work:form/input.btn",
+        "work:table.box"
+      ]
     },
     "Hold Result": {
       "signature": "sha256:a16cf14481dca9fa",
-      "label": "Hold Result"
+      "label": "Hold Result",
+      "paths": [
+        "menu:div.hdr",
+        "menu:table.grid",
+        "menu:table.grid/tbody/tr/td/a",
+        "work:div.hdr"
+      ]
     }
   },
   "targets": {

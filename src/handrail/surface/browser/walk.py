@@ -16,17 +16,17 @@ attribute for every element on the way down, never text and never a value, so
 "HOLD POSTED" and "SHARE ALREADY UNDER HOLD" can still be told apart by the
 one class that differs while a different confirmation number cannot.
 
-The signature here is the milestone 2 version: a hash over the set of paths.
-Milestone 5 replaces it with the tiered, Stoat-style match the design calls
-for; the walk stays the same.
+The walk reports the path set itself; the kernel takes the hash and does the
+tiered, Stoat-style match (``kernel/signature.py``). The walk never changed
+between milestones 2 and 5, which was the point.
 """
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass
 from typing import Any
 
+from ...kernel.signature import take
 from .operations import Control
 
 _HELPERS = r"""
@@ -141,8 +141,11 @@ def control_from(frame: str, raw: dict[str, Any]) -> Control:
     )
 
 
+def paths_of(frames: list[tuple[str, list[str]]]) -> tuple[str, ...]:
+    """Every frame's paths, frame name first, sorted: what `Observation.structure` carries."""
+    return tuple(sorted({f"{name}:{path}" for name, paths in frames for path in paths}))
+
+
 def signature_of(frames: list[tuple[str, list[str]]]) -> str:
-    """The screen's structural hash: every frame's paths, as a set, order-free."""
-    lines = sorted({f"{name}:{path}" for name, paths in frames for path in paths})
-    digest = hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
-    return "sha256:" + digest[:16]
+    """The screen's structural hash, taken by the kernel over the path set."""
+    return take(paths_of(frames)).value

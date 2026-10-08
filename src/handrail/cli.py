@@ -24,8 +24,10 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 from .kernel.evidence import Recorder, new_run_id
+from .kernel.signature import take
 from .replay.engine import ReplayEngine
 from .replay.journal import Journal
 from .schema.capability import Capability
@@ -51,6 +53,33 @@ def pairs(values: list[str] | None) -> dict[str, str]:
     return out
 
 
+def referee(name: str | None) -> Any:
+    """The classifier rung's backend, by name. None means the rung is never climbed."""
+    if not name:
+        return None
+    if name == "claude":
+        from .escalate.backends.claude import ClaudeClassifier
+
+        return ClaudeClassifier()
+    if name == "jev":
+        from .escalate.backends.jev import JevClassifier
+
+        return JevClassifier()
+    if name == "laya":
+        from .escalate.backends.laya import LayaClassifier
+
+        return LayaClassifier()
+    raise SystemExit(f"unknown classifier {name!r}; use claude, jev or laya")
+
+
+def notebook(path: str | None) -> Any:
+    if not path:
+        return None
+    from .kernel.episodes import Episodes
+
+    return Episodes(Path(path))
+
+
 def receipt(result: RunResult, evidence_dir: Path) -> str:
     lines = [
         f"{result.category.value}  code={result.code.value}  outcome={result.outcome}",
@@ -65,15 +94,24 @@ def receipt(result: RunResult, evidence_dir: Path) -> str:
 
 
 async def replay(args: argparse.Namespace) -> int:
+    from .author.run import load_dotenv
     from .surface.browser.surface import BrowserSurface
 
+    load_dotenv()  # the referee's key, if a referee was asked for; replay itself needs none
     capability = Capability.model_validate_json(Path(args.capability).read_text())
     env = {**os.environ, **pairs(args.env)}
     recorder = Recorder(new_run_id("replay"), root=Path(args.evidence))
     journal_path = Path(args.journal) if args.journal else recorder.dir / "journal.jsonl"
     journal = Journal.load(journal_path)
     surface = BrowserSurface(capability.safety.allowed_hosts, headless=not args.headed)
-    engine = ReplayEngine(surface, recorder, env=env, settle_timeout_ms=args.timeout_ms)
+    engine = ReplayEngine(
+        surface,
+        recorder,
+        env=env,
+        settle_timeout_ms=args.timeout_ms,
+        classifier=referee(args.classifier),
+        episodes=notebook(args.episodes),
+    )
     try:
         result = await engine.run(capability, pairs(args.input), journal)
     finally:
@@ -92,8 +130,28 @@ async def observe(args: argparse.Namespace) -> int:
         seen = await surface.observe()
     finally:
         await surface.close()
-    print(f"signature={seen.structure[0]}")
+    print(f"signature={take(seen.structure).value}  paths={len(seen.structure)}")
     print(render(seen.operations))
+    return 0
+
+
+async def episodes(args: argparse.Namespace) -> int:
+    from .kernel.episodes import Episodes
+
+    book = Episodes(Path(args.path))
+    rows = book.rows()
+    print(f"{len(rows)} episodes in {args.path}")
+    for row in rows[-10:]:
+        print(
+            f"  {row['run_id']}  {row['step_id'] or '-':24} {row['question'] or '-':14} "
+            f"{row['chosen'] or '-':14} conf={row['confidence'] or 0:.2f} "
+            f"accepted={bool(row['accepted'])} held={row['held']}"
+        )
+    print("calibration (accepted verdicts with a settled outcome):")
+    print("  confidence   verdicts   held   rate")
+    for b in book.calibration(args.question):
+        rate = f"{b.rate:.2f}" if b.count else "   -"
+        print(f"  {b.low:.1f} to {b.high:.1f}   {b.count:8d}   {b.held:4d}   {rate}")
     return 0
 
 
@@ -109,7 +167,14 @@ def parser() -> argparse.ArgumentParser:
     r.add_argument("--evidence", default="evidence/runs", help="where run records go")
     r.add_argument("--timeout-ms", type=int, default=8000, help="settle timeout per step")
     r.add_argument("--headed", action="store_true", help="show the browser")
+    r.add_argument("--classifier", choices=["claude", "jev", "laya"], help="rung one's referee")
+    r.add_argument("--episodes", help="SQLite notebook for every escalation, e.g. episodes.db")
     r.set_defaults(run=replay)
+
+    e = sub.add_parser("episodes", help="the referee's record: calibration by confidence")
+    e.add_argument("path", nargs="?", default="episodes.db")
+    e.add_argument("--question", help="one question only, e.g. which_screen")
+    e.set_defaults(run=episodes)
 
     o = sub.add_parser("observe", help="print what the browser surface sees on a page")
     o.add_argument("url")

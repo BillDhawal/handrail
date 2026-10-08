@@ -20,8 +20,10 @@ CAPABILITY = Path(__file__).resolve().parents[1] / "capabilities" / "plumbline-p
 def bank() -> Iterator[str]:
     from werkzeug.serving import make_server
 
-    from targetapp.app import create_app
+    from targetapp.app import ARMED, STORE, create_app
 
+    STORE.reset()
+    ARMED.clear()
     server = make_server("127.0.0.1", 0, create_app("quarrybrook"))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     yield f"127.0.0.1:{server.server_port}"
@@ -100,3 +102,21 @@ def test_the_parser_knows_author_and_verify():
     assert (a.command, a.model, a.confirm) == ("author", "anthropic:claude-sonnet-5", None)
     v = parser().parse_args(["verify", "cap.json", "--trial", "a=1,b=2"])
     assert (v.command, v.trial) == ("verify", ["a=1,b=2"])
+
+
+def test_the_parser_knows_the_referee_and_the_notebook():
+    a = parser().parse_args(["replay", "c.json", "--classifier", "claude", "--episodes", "e.db"])
+    assert (a.classifier, a.episodes) == ("claude", "e.db")
+    e = parser().parse_args(["episodes", "e.db", "--question", "which_screen"])
+    assert (e.command, e.question) == ("episodes", "which_screen")
+
+
+def test_episodes_prints_a_calibration_table(tmp_path: Path, capsys):
+    from handrail.kernel.episodes import Episodes
+
+    book = Episodes(tmp_path / "e.db")
+    book.record("r1", "c", "screen", 1, question="which_screen", confidence=0.9, accepted=True)
+    book.settle("r1", "SUCCESS", True)
+    assert main(["episodes", str(tmp_path / "e.db")]) == 0
+    out = capsys.readouterr().out
+    assert "1 episodes" in out and "0.8 to 1.0          1      1   1.00" in out

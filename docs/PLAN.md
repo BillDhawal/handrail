@@ -175,18 +175,51 @@ milestone 5 is where this gets smarter.
 Demo: the same engine and the same schema drive a green-screen session. This is the "computer
 use, not just browser" milestone, and the legacy-banking wedge.
 
-### 5. Screen signatures and the classifier rung
+### 5. Screen signatures and the classifier rung — done
+
+What it proves: a screen that changed is still recognised, by structure first and by a referee
+second, and the referee's call is checked before it is believed.
 
 | file | what it teaches |
 |---|---|
-| `kernel/signature.py` | Stoat-style attribute-path sets: keep the chrome, ignore the rows |
-| `escalate/classifier.py` | The port: `ask(state, questions) -> probabilities` |
-| `escalate/backends/jev.py` | Hosted, pinned to `jev-1.13.0`, text only |
-| `escalate/backends/laya.py` | On-device, nothing leaves the machine |
-| `escalate/questions.py` | The six question definitions: which screen, which control, is it a commit... |
-| `kernel/episodes.py` | SQLite rows for every escalation |
+| `kernel/signature.py` | Stoat-style path sets; tiers: exact, similar at Jaccard 0.85, none |
+| `escalate/questions.py` | The closed card: which screen, which control, is it a commit, is it done, is it a dialog, session expired; `none_of_these` always on it |
+| `escalate/classifier.py` | The port: `ask(state, question) -> Verdict`; `normalise` refuses options not on the card |
+| `escalate/backends/claude.py` | A model with the answer sheet enforced; the one that is always reachable |
+| `escalate/backends/jev.py` | TypeSafe's hosted referee, pinned `jev-1.13.0`; unverified, no key yet |
+| `escalate/backends/laya.py` | On-device; unverified, the download did not fit on the disk |
+| `kernel/episodes.py` | SQLite notebook: every whistle, settled by the run's outcome, binned for calibration |
+| `replay/rungs.py` | Rung one: ask, then re-check the chosen screen's furniture at overlap 0.5 before believing |
+| `replay/screens.py`, `replay/prepare.py` | Split out of the engine so it stays under 250 lines |
 
-Demo: reword a screen's message; rung 1 still classifies it; a calibration curve is plotted.
+Run: `make test` — 299 passed. Demo, live, 2026-10-08, on the re-authored card (now with paths):
+
+```bash
+handrail replay capabilities/plumbline-place-hold.authored.json --classifier claude --episodes episodes.db ...
+handrail episodes episodes.db
+```
+
+| scenario | result |
+|---|---|
+| no drift | SUCCESS, classifier_calls 0 |
+| banner on every page | sign-on recognised at tier 2 (0.857); the frameset pages went to the referee, 6 calls, one per distinct screen, all held; SUCCESS |
+| result line reworded and reclassed | SUCCESS, referee named "Hold Result" at 0.95, furniture overlap 0.8 |
+| reworded, share already held | SUCCESS by the card's single outcome; the authored card never saw "already held" |
+| reworded, no referee | RECOVERABLE SLOW_LOAD: the ladder stops at rung 0, as it should |
+
+Every verdict is a row in `episodes.db` with `held=1` once the run succeeded; the calibration
+table bins them by confidence.
+
+What it taught:
+
+- Option labels with spaces are not valid property names for a structured answer sheet. The
+  Claude backend numbers the options and maps back.
+- The engine checks the screen before a step, while settling, and after it, so one reworded
+  page was asked about three times. A referee is asked once per screen per run now.
+- A card authored before paths existed cannot climb: there is nothing to re-check against.
+  Re-authoring took the same 19 turns and wrote 7 screens with paths.
+- The control rung (`which_control`) is on the card but not wired into resolve yet; its
+  deterministic re-check needs the surface to describe a menu row, which only authoring has.
 
 ### 6. The bridge and the human
 
