@@ -48,7 +48,9 @@ class JevClassifier:
         if self._client is None:
             if not self.api_key:
                 raise ClassifierUnavailable("jev: no TYPESAFE_API_KEY")
-            from typesafe_sdk import AsyncTypeSafeClient  # type: ignore[import-not-found]
+            from typesafe_sdk import (
+                AsyncTypeSafeClient,
+            )
 
             self._client = AsyncTypeSafeClient(api_key=self.api_key, model=self.model)
         return self._client

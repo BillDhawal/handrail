@@ -1,36 +1,17 @@
-"""Rung one of the ladder: the referee is asked, and the engine checks the call before acting.
+"""Rung one: the referee is asked, and the engine checks the call before acting.
 
-When the cook cannot tell which counter this is, the first thing to try is
-cheap and bounded: ask a referee a closed question. "Which of these screens
-is this: posted, already held, none of these?" The referee answers with a
-probability per option. That is all the referee ever does.
-
-Then the engine checks the call. A verdict is acted on only if the card's
-threshold accepts it *and* the chosen screen's stored furniture overlaps what
-is on the page by at least ``RECHECK``. A screen with no stored paths cannot
-be re-checked, so a verdict for it is never acted on. Screen text is
-untrusted and can steer a referee; the furniture cannot be talked into
-anything.
-
-Every whistle is a row in the episodes notebook, accepted or not, and the
-run's ``classifier_calls`` counts them. On the ordinary path this file is
-never entered and the counter stays zero.
-
-A referee is asked once per screen per run. The engine checks the screen
-before a step, while settling, and after a step, so the same page comes up
-three times in a row; the first verdict is remembered for the rest of the
-run, keyed by the page's furniture and the candidates on the card.
+See the package docstring for the rules; this file is the first rung only.
 """
 
 from __future__ import annotations
 
-from ..escalate.classifier import Classifier, ClassifierUnavailable
-from ..escalate.questions import which_screen
-from ..kernel.episodes import Episodes
-from ..kernel.evidence import Recorder
-from ..kernel.signature import jaccard, take
-from ..schema.capability import Capability
-from ..surface.base import Observation
+from ...escalate.classifier import Classifier, ClassifierUnavailable
+from ...escalate.questions import which_screen
+from ...kernel.episodes import Episodes
+from ...kernel.evidence import Recorder
+from ...kernel.signature import jaccard, take
+from ...schema.capability import Capability
+from ...surface.base import Observation
 
 #: The chosen screen must share at least this much furniture with the page. Below the
 #: "similar" tier on purpose: the referee narrows the question, the furniture confirms it.

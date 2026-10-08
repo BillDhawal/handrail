@@ -60,6 +60,8 @@ class Session:
     paths: dict[str, tuple[str, ...]] = field(default_factory=dict)
     observation: Observation | None = None
     outcome: str | None = None
+    #: A scout (rung two) names a screen; the engine checks the furniture, not this session.
+    lenient_finish: bool = False
 
     @property
     def finished(self) -> bool:
@@ -164,7 +166,7 @@ async def finish(session: Session, outcome: str) -> str:
     outcome = outcome.strip()
     if outcome not in session.screens:
         raise ToolRefused(f"{outcome!r} is not a labelled screen; call assert_screen first")
-    if session.screens[outcome] != session.signature():
+    if not session.lenient_finish and session.screens[outcome] != session.signature():
         raise ToolRefused(f"the screen showing now is not {outcome!r}")
     session.outcome = outcome
     session._record(

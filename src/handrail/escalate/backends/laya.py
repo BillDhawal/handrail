@@ -7,9 +7,11 @@ shaky above about twenty options, so it serves the small questions: which of
 these screens, is this a dialog, has the session expired. The long
 ``which_control`` menu goes to Jev when Jev is reachable.
 
-The checkpoint is downloaded on first use. Unverified on this machine: the
-disk was full when the download was attempted, so the call shape follows the
-library's own ``decide`` signature and nothing more is claimed.
+The checkpoint is downloaded on first use (about a minute; then each
+question takes about a tenth of a second). Verified on 2026-10-08: posted at
+0.88, already held at 0.91, the inquiry screen "none of these" at 0.65, and
+an honest 0.46 on a reworded result line, which the card's threshold rejects.
+That abstention is exactly what sends a run up to rung two.
 """
 
 from __future__ import annotations
@@ -23,11 +25,12 @@ MAX_OPTIONS = 20
 
 
 def to_question(question: Question) -> dict[str, Any]:
+    """Laya's `choice` question: criteria maps each option to its one-line hint."""
     return {
         question.name: {
-            "type": "single_choice",
-            "question": question.prompt,
-            "options": list(question.options),
+            "type": "choice",
+            "instructions": question.prompt,
+            "criteria": {opt: hint or opt for opt, hint in question.options.items()},
         }
     }
 
@@ -42,7 +45,7 @@ class LayaClassifier:
     def _runner(self) -> Any:
         if self._agent is None:
             try:
-                import laya  # type: ignore[import-not-found]
+                import laya
 
                 self._agent = laya.Agent(self.model)
             except Exception as exc:  # noqa: BLE001 - cannot load means no referee

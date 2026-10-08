@@ -1,6 +1,6 @@
 # Handoff — where things stand
 
-**Written:** 2026-10-08, at the end of milestone 5 (milestone 4, the terminal, is skipped until a 3270 host is at hand).
+**Written:** 2026-10-08, at the end of milestone 6 (milestone 4, the terminal, is skipped until a 3270 host is at hand).
 **For:** the next Claude session working in this folder, and for Dhawal coming back after a break.
 
 ## What this is, in three sentences
@@ -28,6 +28,9 @@ back-office software (banks and credit unions), not as the take-home it started 
 - 2026-10-08, later: milestone 5 done. 299 tests. Signatures are tiered, the classifier port
   has three backends (Claude live, Jev and Laya unverified), rung one names a reworded screen
   and re-checks it, every whistle lands in `episodes.db`. Milestone 4 was skipped: no 3270 host.
+- 2026-10-08, later still: milestone 6 done. 321 tests. Laya verified on-device. The scout
+  (rung two) crossed a reworded result in one turn; the console (rung three) took a person's
+  hand-back on a page nothing else could place. The classify extra is installed.
 
 ## Decisions already made — do not reopen
 
@@ -48,16 +51,16 @@ src/handrail/
   schema/     errors, bindings, effects, target, capability, results, trace   milestones 0, 3
   surface/    base (six verbs), null_surface (scripted stage set)            milestone 1
   surface/browser/  operations, locators, fingerprint, walk, queries, surface  milestone 2
-  replay/     validate, journal, engine, prepare, screens, rungs             milestones 1, 5
-  kernel/     evidence, signature (tiered match), episodes (SQLite notebook) milestones 1, 5
-  author/     tools, middleware, agent, recorder, run                         milestone 3
+  replay/     validate, journal, engine, prepare, screens, rungs/{one,two,three}  1, 5, 6
+  kernel/     evidence, signature, episodes, control (the baton)             milestones 1, 5, 6
+  author/     tools, middleware, agent, recorder, run, bridge (the scout)     milestones 3, 6
   compile/    compiler, verify                                                milestone 3
-  escalate/   questions, classifier (the port), backends/{claude,jev,laya}    milestone 5
-  cli.py      handrail replay, observe, author, verify, episodes              milestones 2, 3, 5
-  serve/                                                                      empty, named
+  escalate/   questions, classifier, bridge (ports), backends/{claude,jev,laya}  milestones 5, 6
+  serve/      console (the stop button and the telephone)                     milestone 6
+  cli.py      replay (--classifier, --bridge, --console), observe, author, verify, episodes
 capabilities/ plumbline-place-hold.json (hand-written), .authored.json (model, verified, with paths)
-targetapp/    PLUMBLINE: two tenants, /__test__/share/<id>, and drift faults drift_minor, drift_reword
-tests/        299 passing; the invariants live in tests/invariants/
+targetapp/    PLUMBLINE: two tenants, /__test__/share/<id>, faults drift_minor, drift_reword, drift_major
+tests/        321 passing; the invariants live in tests/invariants/
 docs/         DESIGN.md, PLAN.md, this file, the site (index, five-pictures, as-built), prototype/
 ```
 
@@ -66,7 +69,7 @@ scripted surface and returns `SUCCESS` with `confirmation=HX-829120`, both model
 The test to read first is `tests/replay/test_engine.py::test_a_step_in_doubt_is_never_repeated_across_runs`:
 the double-post bug from the prototype, made impossible by the journal.
 
-## Design choices made during milestones 1 to 5
+## Design choices made during milestones 1 to 6
 
 - **Stage steps are redone on a resumed run; commit steps never are.** Re-typing a field is
   harmless by definition. Without this a run resumed after a crash would skip typing the member
@@ -105,33 +108,36 @@ the double-post bug from the prototype, made impossible by the journal.
 - **`held` means the run ended well.** An accepted verdict is marked held when the run ends in
   SUCCESS or a business outcome; that is the ground truth the calibration table uses.
 - **The Claude backend numbers its options.** Labels are free text; schema keys are not.
+- **The scout's report is checked like the referee's.** Named screen must be a candidate (never
+  backwards) and the furniture must overlap at 0.5. The scout's leash is four turns.
+- **A person's word is final, but only where the machine cannot tell.** A hand-back must name a
+  candidate; and if the page matches another declared screen exactly, that match wins.
+- **The baton lives in `kernel/control.py` and the console only moves it.** The engine checks it
+  before every step and waits while a person holds it; abort is final.
+- **Rungs are a package.** One file per rung, each with the same per-page memo.
 
-## What is next — milestone 6, the bridge and the human; or 4 if a host turns up
+## What is next — milestone 7, agents as callers
 
 Files, in order, each with a test first (details in `docs/PLAN.md`):
 
-1. `escalate/bridge.py` — rung two: a bounded authoring run from the current screen, using the
-   three-line card with `commit` denied, that must end by naming a declared screen the engine
-   then verifies. Everything it needs exists: `author/tools.py`, the guard, `screens.name`.
-2. `kernel/control.py` — the ownership token: `AUTOMATION_RUNNING`, `PAUSED`, `HUMAN_CONTROL`,
-   `ABORTED`.
-3. `serve/console.py` — the smallest page that pauses, takes over, and hands back.
+1. `serve/mcp.py` — one typed tool per approved capability. The tool's input schema is the
+   card's inputs; the result says the outcome category, the outputs, and whether a retry is safe
+   (`RunResult.retryable`). An agent never drives the screens; it calls the tool.
+2. `examples/agent_caller.py` — a `deepagents` caller that invokes place_hold and handles
+   "already held" without retrying.
 
-Also pending from milestone 5: wire `which_control` into resolve. It needs the replay surface to
-describe a menu row (today only `BrowserAuthoring` can), so the fingerprint re-check can run.
+Needs: a lifecycle step that moves a verified card to `approved` with a named person (nothing
+grants that today; a `handrail approve CAP --by NAME` is the natural home), and the MCP SDK.
 
-Demo: arm `drift_reword` with a bigger change than the referee can place, watch the bridge
-recover it; then a worse one, and take over by hand.
-
-After that: 7 MCP server, 8 macOS accessibility, and 4 the terminal when a 3270 host is found.
+Still pending: wire `which_control` into resolve (the control rung); a Playwright event tap
+so a person's clicks during `HUMAN_CONTROL` are recorded; milestone 4 when a 3270 host exists.
 
 ## Open questions, deliberately not guessed
 
 - Which 3270 host to demo the terminal surface against. Hercules with a sample CICS
   application is the likely answer; unverified. Milestone 4 waits on this.
-- Laya on this machine: the checkpoint download did not fit (the disk was at 96%). The backend
-  is written against the library's `decide` API and untested. Jev is written against the
-  TypeSafe SDK's `system_one` and untested: no `TYPESAFE_API_KEY`.
+- Jev is written against the TypeSafe SDK's `system_one` and untested: no `TYPESAFE_API_KEY`.
+  Laya is verified on-device (loads in about a minute, answers in about a tenth of a second).
 - What OpenAdapt (MIT, `github.com/OpenAdaptAI/OpenAdapt`) already does in the three places
   this design claims to be new. README-level answer, 2026-10-07: their README mentions no
   write-ahead journal and no classifier rung; it does have an agent-facing run tool
@@ -169,3 +175,7 @@ After that: 7 MCP server, 8 macOS accessibility, and 4 the terminal when a 3270 
 - A structured-output schema's property names must be identifiers. "Hold Result" is not.
 - A card without stored paths cannot climb the ladder. Anything authored before 2026-10-08 needs
   re-authoring, or `paths` filled in from a live walk.
+- Laya's question type is `choice` with `criteria`, the same shape as TypeSafe's; `single_choice`
+  does not exist.
+- A scout with eight turns and no commits still walked the application backwards. Four turns.
+- `zsh` does not word-split `$VAR`; a flag string in a variable is one argument. Use `${=VAR}`.

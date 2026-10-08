@@ -221,15 +221,42 @@ What it taught:
 - The control rung (`which_control`) is on the card but not wired into resolve yet; its
   deterministic re-check needs the surface to describe a menu row, which only authoring has.
 
-### 6. The bridge and the human
+### 6. The bridge and the human — done
+
+What it proves: when the engine and the referee cannot place a screen, a scout with no power
+to commit may go and look, and failing that a person takes the baton, and nothing any of them
+says is believed until the furniture agrees or a person has signed for it.
 
 | file | what it teaches |
 |---|---|
-| `escalate/bridge.py` | A bounded authoring run from the current screen, `commit` denied |
-| `kernel/control.py` | Ownership token: `AUTOMATION_RUNNING`, `PAUSED`, `HUMAN_CONTROL`, `ABORTED` |
-| `serve/console.py` | The smallest page that pauses, takes over, and hands back |
+| `kernel/control.py` | The baton: `AUTOMATION_RUNNING`, `PAUSED`, `HUMAN_CONTROL`, `ABORTED`; exchanges only by name |
+| `escalate/bridge.py` | The port and the report: `cross(...) -> Crossing(named, model_calls, turns)` |
+| `author/bridge.py` | The scout: the three-line card with `commit` struck off, `assert_screen` removed, four turns |
+| `replay/rungs/` | One file per rung; each asked once per page per run; two and three re-check the furniture or require a forward name |
+| `serve/console.py` | The stop button and the telephone: take over, hand back naming a screen, abort; asyncio, no framework |
+| `replay/screens.py` | Settling moved here; the engine is back under 250 lines |
 
-Demo: inject drift mid-run; the bridge recovers it; then a worse drift, and you take over.
+Run: `make test` — 321 passed. Demo, live, 2026-10-08, on the mock bank:
+
+| scenario | rung 1 | rung 2 | rung 3 | result |
+|---|---|---|---|---|
+| result reworded, Laya on-device as referee, Claude scout | none_of_these at 0.93, refused | scout said "Hold Result" in one turn, two model calls; furniture 0.8; accepted | | SUCCESS, llm_calls 2 |
+| result page rewritten entirely (`drift_major`), Claude referee, scout | none_of_these at 0.95 | scout wandered 8 turns back to the hold form, named nothing | person handed back "Hold Result" while the hold form was showing | refused: the furniture said "Place Account Hold" |
+| same, no scout | none_of_these at 0.95 | | person read the stuck page and the record store (HOLD), handed back "Hold Result" | SUCCESS, escalated_to_human |
+
+What it taught:
+
+- A scout that wanders is worse than one that gives up. Eight turns with commit denied were
+  enough to walk the application back to an earlier screen. The leash is now four turns and the
+  orders say never go back. The journal would still have refused a second post; the run was
+  merely stranded.
+- The engine does not believe a person either, when it can see otherwise. A hand-back naming a
+  screen while the page matches a different declared screen exactly is a screen mismatch, not a
+  recovery. A person's word stands only where the machine cannot tell.
+- Every rung needs the memo: the engine looks at a page three times per step.
+- The console records a screenshot and the text before the person takes over and after they
+  hand back; it does not record the person's clicks in the browser. That needs a Playwright
+  event tap and is left for the macOS milestone, where the same tap flips the baton.
 
 ### 7. Agents as callers
 

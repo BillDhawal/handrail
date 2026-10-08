@@ -24,8 +24,9 @@ def test_jev_asks_a_choice_question_with_the_cards_hints_as_criteria():
     }
 
 
-def test_laya_asks_a_single_choice_question_with_the_cards_options():
-    assert to_question(Q)[Q.name]["options"] == ["posted", "held", NONE]
+def test_laya_asks_a_choice_question_with_the_cards_hints_as_criteria():
+    q = to_question(Q)[Q.name]
+    assert q["type"] == "choice" and list(q["criteria"]) == ["posted", "held", NONE]
 
 
 async def test_jev_without_a_key_is_unavailable_not_a_guess(monkeypatch):

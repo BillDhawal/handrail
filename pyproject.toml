@@ -41,3 +41,8 @@ select = ["E", "F", "I", "B", "UP"]
 strict = true
 plugins = ["pydantic.mypy"]
 files = ["src"]
+
+[[tool.mypy.overrides]]
+# Optional referees: installed only with the classify extra, and shipped without type stubs.
+module = ["laya", "laya.*", "typesafe_sdk", "typesafe_sdk.*"]
+ignore_missing_imports = true

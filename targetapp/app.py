@@ -118,6 +118,16 @@ def create_app(tenant: str = "quarrybrook") -> Flask:
             banner = '<div class="promo">RATES UPDATED - SEE BULLETIN 14</div>\n'
             top = '<div class="hdr">PLUMBLINE'
             html = html.replace(top, banner + top, 1)
+        elif fault == "drift_major" and request.path == "/hold/post":
+            # Everything on the result page renamed and reworded: the furniture is gone,
+            # the words are gone, only a person can say what this is.
+            html = html.replace("HOLD RESULT", "TRANSACTION SUMMARY")
+            html = html.replace("HOLD POSTED", "REQUEST ACCEPTED")
+            html = html.replace(MSG_ALREADY_HELD, "REQUEST NOT APPLIED - PRIOR RESTRICTION")
+            html = re.sub(r'class="hdr"', 'class="banner"', html)
+            html = re.sub(r'class="msg"', 'class="advice"', html)
+            html = html.replace("<body>", '<body><table class="frame"><tr><td>', 1)
+            html = html.replace("</body>", "</td></tr></table></body>", 1)
         elif fault == "drift_reword" and request.path == "/hold/post":
             html = html.replace("HOLD POSTED", "HOLD HAS BEEN PLACED")
             html = html.replace(MSG_ALREADY_HELD, "SHARE IS CURRENTLY HELD - NOTHING CHANGED")

@@ -25,13 +25,13 @@ definition, so on a resumed run a stage is simply done again.
 
 from __future__ import annotations
 
-import asyncio
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from ..escalate.bridge import Bridge
 from ..escalate.classifier import Classifier
 from ..kernel.episodes import Episodes
 from ..kernel.evidence import Recorder
@@ -43,7 +43,7 @@ from ..schema.results import Drift, ErrorDetail, RunResult, StepReport
 from ..surface.base import Resolution, Surface
 from .journal import Journal
 from .prepare import outputs, prepare
-from .rungs import RungOne
+from .rungs import RungOne, RungThree, RungTwo
 from .screens import Finished, Screens
 
 DEFAULT_SETTLE_TIMEOUT_MS = 8000
@@ -60,6 +60,8 @@ class _Run:
     drift: Drift = field(default_factory=Drift)
     read_values: dict[str, str] = field(default_factory=dict)
     rung1: RungOne | None = None
+    rung2: RungTwo | None = None
+    rung3: RungThree | None = None
     screens: Screens | None = None
 
 
@@ -73,6 +75,9 @@ class ReplayEngine:
         settle_timeout_ms: int = DEFAULT_SETTLE_TIMEOUT_MS,
         classifier: Classifier | None = None,
         episodes: Episodes | None = None,
+        bridge: Bridge | None = None,
+        console: Any = None,
+        human_wait_s: float | None = None,
     ) -> None:
         self.surface = surface
         self.recorder = recorder
@@ -81,6 +86,9 @@ class ReplayEngine:
         self.settle_timeout_ms = settle_timeout_ms
         self.classifier = classifier
         self.episodes = episodes
+        self.bridge = bridge
+        self.console = console
+        self.human_wait_s = human_wait_s
 
     async def run(
         self, capability: Capability, inputs: dict[str, Any], journal: Journal | None = None
@@ -89,7 +97,14 @@ class ReplayEngine:
         run = _Run(capability, journal or Journal())
         if self.classifier is not None:
             run.rung1 = RungOne(self.classifier, self.recorder, capability, self.episodes)
-        run.screens = screens = Screens(self.surface, self.recorder, capability, run.rung1)
+        if self.bridge is not None:
+            run.rung2 = RungTwo(self.bridge, self.surface, self.recorder, capability, self.episodes)
+        if self.console is not None:
+            run.rung3 = RungThree(
+                self.console, self.recorder, capability, self.episodes, self.human_wait_s
+            )
+        screens = Screens(self.surface, self.recorder, capability, run.rung1, run.rung2, run.rung3)
+        run.screens = screens
         outcome: str | None = None
         error: ErrorDetail | None = None
 
@@ -109,6 +124,8 @@ class ReplayEngine:
                 steps=run.reports,
                 drift=run.drift,
                 classifier_calls=run.rung1.calls if run.rung1 else 0,
+                llm_calls=run.rung2.model_calls if run.rung2 else 0,
+                escalated_to_human=bool(run.rung3 and run.rung3.escalations),
             )
             self.recorder.write_json("result.json", result)
             self.recorder.log("replay.finish", category=category.value, code=code.value)
@@ -120,6 +137,7 @@ class ReplayEngine:
         try:
             self._compatible(capability)
             run.params = prepare(capability, inputs, self.recorder, self.env)
+            screens.inputs, screens.env = run.params, self.env
             await self.surface.open(bind_text(capability.surface.entry, run.params, self.env))
             for step in capability.steps:
                 await self._run_step(run, step)
@@ -164,6 +182,11 @@ class ReplayEngine:
 
         screens = run.screens
         assert screens is not None
+        if run.rung3 is not None and not run.rung3.baton.automation_may_act:
+            if not await run.rung3.baton.wait_until_automation_may_act(self.human_wait_s):
+                raise HandrailError(
+                    "aborted at the console", ErrorCode.ABORTED_BY_OPERATOR, step.id
+                )
         await screens.expect(step.screen, step.id)
         journal.reached(step.screen)
 
@@ -196,7 +219,10 @@ class ReplayEngine:
         if step.op.verb == "read" and result.value is not None:
             run.read_values[step.id] = result.value
 
-        if not await self._settled(run, step):
+        settled = await screens.settled(
+            step, run.params, self.settle_timeout_ms, self.poll_interval_s
+        )
+        if not settled:
             raise HandrailError(
                 f"{step.settle.kind} never came true after {step.id}", ErrorCode.SLOW_LOAD, step.id
             )
@@ -222,36 +248,3 @@ class ReplayEngine:
             )
         )
         self.recorder.log("step.ok", step=step.id, ms=int((time.monotonic() - clock) * 1000))
-
-    # -- settling ------------------------------------------------------------------
-
-    async def _settled(self, run: _Run, step: Step) -> bool:
-        """Poll the settle condition deterministically; at the deadline, one word from the referee.
-
-        A referee is asked once, not on every poll.
-        """
-        capability, s, screens = run.capability, step.settle, run.screens
-        assert screens is not None
-        if s.kind == "target_present":
-            nxt = capability.step(s.step or step.id)
-            target = bind_target(capability.targets[nxt.target or ""], run.params, self.env)
-            condition = f"target_present:{target.name.eq if target.name else target.role}"
-        elif s.kind == "screen_is":
-            condition = f"screen:{s.screen or step.screen}"
-        else:
-            condition = "keyboard_unlocked"
-        deadline = time.monotonic() + self.settle_timeout_ms / 1000
-        while True:
-            if condition.startswith("screen:"):
-                settled = await screens.name([], None) == condition[len("screen:") :]
-            else:
-                settled = await self.surface.evaluate(condition)
-            if settled:
-                return True
-            if time.monotonic() >= deadline:
-                break
-            await asyncio.sleep(self.poll_interval_s)
-        if condition.startswith("screen:"):
-            wanted = condition[len("screen:") :]
-            return await screens.name([wanted], step.id) == wanted
-        return False

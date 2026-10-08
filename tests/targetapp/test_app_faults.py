@@ -116,3 +116,17 @@ def test_reword_drift_changes_the_hold_result_line_and_its_class(monkeypatch):
     ).get_data(as_text=True)
     assert 'class="note">SHARE IS CURRENTLY HELD' in html
     client.post("/__test__/reset")  # ARMED is one dict per process; leave it clean
+
+
+def test_major_drift_leaves_nothing_of_the_result_page_for_a_machine_to_recognise(monkeypatch):
+    monkeypatch.setenv("HANDRAIL_ALLOW_FAULTS", "1")
+    client = create_app("quarrybrook").test_client()
+    _arm(client, "drift_major")
+    with client.session_transaction() as sess:
+        sess["opid"] = "dcolewell"
+    html = client.post(
+        "/hold/post", data={"share": "400118-S0001", "rsn": "LEGAL", "nt": ""}
+    ).get_data(as_text=True)
+    assert "REQUEST ACCEPTED" in html and "HOLD" not in html
+    assert 'class="hdr"' not in html and 'class="banner"' in html and 'class="frame"' in html
+    client.post("/__test__/reset")

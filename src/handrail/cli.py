@@ -104,18 +104,40 @@ async def replay(args: argparse.Namespace) -> int:
     journal_path = Path(args.journal) if args.journal else recorder.dir / "journal.jsonl"
     journal = Journal.load(journal_path)
     surface = BrowserSurface(capability.safety.allowed_hosts, headless=not args.headed)
+    classifier = referee(args.classifier)
+    bridge = None
+    if args.bridge:
+        from langchain.chat_models import init_chat_model
+
+        from .author.bridge import LangChainBridge
+        from .surface.browser.queries import BrowserAuthoring
+
+        model = init_chat_model(args.bridge)
+        bridge = LangChainBridge(model, lambda: BrowserAuthoring(surface.page), classifier)
+    console = None
+    if args.console is not None:
+        from .kernel.control import Baton
+        from .serve.console import Console
+
+        console = Console(Baton(), port=args.console)
+        print(f"console: {await console.start()}")
     engine = ReplayEngine(
         surface,
         recorder,
         env=env,
         settle_timeout_ms=args.timeout_ms,
-        classifier=referee(args.classifier),
+        classifier=classifier,
         episodes=notebook(args.episodes),
+        bridge=bridge,
+        console=console,
+        human_wait_s=args.human_wait_s,
     )
     try:
         result = await engine.run(capability, pairs(args.input), journal)
     finally:
         await surface.close()
+        if console is not None:
+            await console.stop()
     print(receipt(result, recorder.dir))
     return EXIT_CODES[result.category]
 
@@ -169,6 +191,9 @@ def parser() -> argparse.ArgumentParser:
     r.add_argument("--headed", action="store_true", help="show the browser")
     r.add_argument("--classifier", choices=["claude", "jev", "laya"], help="rung one's referee")
     r.add_argument("--episodes", help="SQLite notebook for every escalation, e.g. episodes.db")
+    r.add_argument("--bridge", metavar="MODEL", help="rung two's scout, a chat model name")
+    r.add_argument("--console", type=int, metavar="PORT", help="rung three: the console (0 = any)")
+    r.add_argument("--human-wait-s", type=float, default=None, help="how long to wait for a person")
     r.set_defaults(run=replay)
 
     e = sub.add_parser("episodes", help="the referee's record: calibration by confidence")

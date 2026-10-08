@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from handrail.kernel.evidence import Recorder, verify_chain
 from handrail.replay.engine import ReplayEngine
 from handrail.replay.journal import Journal
@@ -323,3 +325,115 @@ async def test_the_referee_is_asked_once_per_screen_per_run(tmp_path):
     assert result.category is OutcomeCategory.SUCCESS
     # settle, expect and the final outcome check all look at the same reworded page
     assert result.classifier_calls == 1 and len(referee.asked) == 1
+
+
+class Scout:
+    """A scripted bridge: turns the page by hand, then names what the test says."""
+
+    name = "fake"
+
+    def __init__(self, names: str | None, advance: bool = True, calls: int = 2) -> None:
+        self.names, self.advance, self.calls, self.sent = names, advance, calls, []
+
+    async def cross(self, surface, capability, candidates, inputs, env, step_id):
+        from handrail.escalate.bridge import Crossing
+
+        self.sent.append(list(candidates))
+        if self.advance:
+            surface.advance()
+        return Crossing(self.names, self.calls, 3)
+
+
+async def test_when_the_referee_abstains_the_scout_crosses_and_the_furniture_is_checked(tmp_path):
+    # The result page has moved one page further than the stage set says; the scout turns it.
+    cap, stage = reworded(shared=7)
+    waiting = Page(
+        "sig:interstitial",
+        text="PLEASE WAIT",
+        matches={("role_name", "Result"): 1},  # the settle is satisfied; the screen is not
+        paths=("work:div.wait",),
+    )
+    stage.insert(2, waiting)
+    stage[1].advance_on = frozenset({"F10=Post Hold"})
+    scout = Scout("posted")
+    recorder = Recorder("run_t", root=tmp_path)
+    eng = ReplayEngine(
+        NullSurface(stage), recorder, env=ENV, poll_interval_s=0.001, settle_timeout_ms=50,
+        classifier=Referee("none_of_these"), bridge=scout,
+    )  # fmt: skip
+    result = await eng.run(Capability.model_validate(cap), INPUTS)
+    assert result.category is OutcomeCategory.SUCCESS, result.error
+    assert result.classifier_calls >= 1 and result.llm_calls == 2
+    assert '"event": "rung2.screen"' in (recorder.dir / "log.jsonl").read_text()
+
+
+async def test_a_scout_naming_a_landmark_behind_the_cook_is_ignored(tmp_path):
+    # Invariant 3: a forward bridge never moves the run backwards. "inquiry" is not a candidate
+    # after post_hold, so naming it is not a crossing, however sure the scout is.
+    cap, stage = reworded(shared=7)
+    scout = Scout("inquiry", advance=False)
+    eng, _ = with_referee(stage, tmp_path, Referee("none_of_these"))
+    eng.bridge = scout
+    result = await eng.run(Capability.model_validate(cap), INPUTS)
+    assert result.category is not OutcomeCategory.SUCCESS
+    assert all("inquiry" not in sent for sent in scout.sent)
+
+
+async def test_a_scout_that_names_the_right_screen_on_the_wrong_furniture_is_refused(tmp_path):
+    cap, stage = reworded(shared=3)  # 3 of 17 shared: the scout's word is not enough
+    eng, recorder = with_referee(stage, tmp_path, Referee("none_of_these"))
+    eng.bridge = Scout("posted", advance=False)
+    result = await eng.run(Capability.model_validate(cap), INPUTS)
+    assert result.category is not OutcomeCategory.SUCCESS
+    assert '"accepted": false' in (recorder.dir / "log.jsonl").read_text()
+
+
+async def test_when_every_rung_fails_a_person_takes_over_and_hands_back(tmp_path):
+    from handrail.kernel.control import Baton
+    from handrail.serve.console import Console
+
+    cap, stage = reworded(shared=3)  # nothing deterministic can place this page
+    console = Console(Baton())
+    eng, recorder = with_referee(stage, tmp_path, Referee("none_of_these"))
+    eng.console, eng.human_wait_s = console, 2.0
+
+    async def person():
+        await asyncio.sleep(0.05)
+        console.act("take_over", "dhawal")
+        console.act("hand_back", "dhawal", "posted")
+
+    asyncio.get_running_loop().create_task(person())
+    result = await eng.run(Capability.model_validate(cap), INPUTS)
+    assert result.category is OutcomeCategory.SUCCESS and result.outcome == "posted"
+    assert result.escalated_to_human is True
+    log = (recorder.dir / "log.jsonl").read_text()
+    assert '"event": "rung3.paused"' in log and '"by": "dhawal"' in log
+
+
+async def test_an_abort_at_the_console_ends_the_run_as_aborted_by_operator(tmp_path):
+    from handrail.kernel.control import Baton
+    from handrail.serve.console import Console
+
+    cap, stage = reworded(shared=3)
+    console = Console(Baton())
+    eng, _ = with_referee(stage, tmp_path, Referee("none_of_these"))
+    eng.console, eng.human_wait_s = console, 2.0
+
+    async def person():
+        await asyncio.sleep(0.05)
+        console.act("abort", "dhawal")
+
+    asyncio.get_running_loop().create_task(person())
+    result = await eng.run(Capability.model_validate(cap), INPUTS)
+    assert result.code is ErrorCode.ABORTED_BY_OPERATOR
+
+
+async def test_nobody_at_the_console_is_a_timeout_not_a_guess(tmp_path):
+    from handrail.kernel.control import Baton
+    from handrail.serve.console import Console
+
+    cap, stage = reworded(shared=3)
+    eng, _ = with_referee(stage, tmp_path, Referee("none_of_these"))
+    eng.console, eng.human_wait_s = Console(Baton()), 0.05
+    result = await eng.run(Capability.model_validate(cap), INPUTS)
+    assert result.category is not OutcomeCategory.SUCCESS and result.escalated_to_human
