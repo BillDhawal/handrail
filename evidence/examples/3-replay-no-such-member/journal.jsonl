@@ -1,0 +1,11 @@
+{"seq": 1, "kind": "screen", "name": "signon"}
+{"seq": 2, "kind": "dispatched", "name": "enter_operator"}
+{"seq": 3, "kind": "observed", "name": "enter_operator"}
+{"seq": 4, "kind": "screen", "name": "signon"}
+{"seq": 5, "kind": "dispatched", "name": "enter_password"}
+{"seq": 6, "kind": "observed", "name": "enter_password"}
+{"seq": 7, "kind": "screen", "name": "signon"}
+{"seq": 8, "kind": "screen", "name": "desk"}
+{"seq": 9, "kind": "dispatched", "name": "enter_member"}
+{"seq": 10, "kind": "observed", "name": "enter_member"}
+{"seq": 11, "kind": "screen", "name": "desk"}

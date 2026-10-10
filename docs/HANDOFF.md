@@ -1,6 +1,6 @@
 # Handoff — where things stand
 
-**Written:** 2026-10-08, at the end of milestone 7 (milestone 4, the terminal, is skipped until a 3270 host is at hand).
+**Written:** 2026-10-10, submission-ready after milestone 7 (milestone 4, the terminal, is skipped until a 3270 host is at hand).
 **For:** the next Claude session working in this folder, and for Dhawal coming back after a break.
 
 ## What this is, in three sentences
@@ -34,6 +34,10 @@ back-office software (banks and credit unions), not as the take-home it started 
 - 2026-10-08, last: milestone 7 done. 332 tests. The hand-written card is verified and approved;
   a deepagents agent ordered through the MCP server and read "already held" as an answer. The
   serve extra (mcp, langchain-mcp-adapters, deepagents) is installed.
+- 2026-10-10: the submission deliverables. `/README.md` rewritten as the front door, `/REPORT.md`
+  written under the brief's seven headings, `/evidence/examples/` committed: the real discovery
+  run plus seven replays (success, two business outcomes, an injected failure, a drift recovered
+  by the referee, a bad input, a human takeover), every log's hash chain verified.
 
 ## Decisions already made — do not reopen
 
@@ -126,10 +130,11 @@ the double-post bug from the prototype, made impossible by the journal.
 
 ## What is next
 
-Version 0.1 as PLAN.md defines it has two milestones left, and one is blocked:
+The take-home deliverables are in place: README, REPORT, evidence. What remains is the owner's
+part, then version 0.1's last milestones:
 
-1. **README.md** still describes the empty skeleton. Make it the front door: what Handrail is,
-   the three demos (replay, author and verify, an agent ordering), how to run them. Half a day.
+1. **Submit.** Read REPORT.md and README.md as your own words and change what is not. Email the
+   repo URL on its own line to assignments@interface.ai from the address you applied with.
 2. **Milestone 8, macOS accessibility** (`surface/macos_ax/`): TextEdit, type and save a note,
    no coordinates. Needs TCC permission on the Mac. The input-event tap that flips the baton
    lives here. A learning milestone, not the product claim.

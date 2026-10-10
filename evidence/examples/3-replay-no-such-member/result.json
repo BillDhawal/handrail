@@ -1,0 +1,49 @@
+{
+  "run_id": "replay_20261010T180723Z_703657",
+  "capability_id": "plumbline.place_hold",
+  "capability_version": "0.1.0",
+  "started_at": "2026-10-10T18:07:23.134250+00:00",
+  "duration_ms": 454,
+  "category": "BUSINESS_OUTCOME",
+  "code": "RECORD_NOT_FOUND",
+  "outcome": "no_match",
+  "outputs": {},
+  "error": null,
+  "steps": [
+    {
+      "step_id": "enter_operator",
+      "status": "ok",
+      "rung": "label",
+      "rung_cost": 140,
+      "note": null
+    },
+    {
+      "step_id": "enter_password",
+      "status": "ok",
+      "rung": "label",
+      "rung_cost": 140,
+      "note": null
+    },
+    {
+      "step_id": "sign_on",
+      "status": "ok",
+      "rung": "role_name",
+      "rung_cost": 100,
+      "note": null
+    },
+    {
+      "step_id": "enter_member",
+      "status": "ok",
+      "rung": "label",
+      "rung_cost": 140,
+      "note": null
+    }
+  ],
+  "drift": {
+    "steps_resolved": 5,
+    "first_choice": 5
+  },
+  "classifier_calls": 0,
+  "llm_calls": 0,
+  "escalated_to_human": false
+}

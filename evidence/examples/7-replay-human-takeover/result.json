@@ -1,0 +1,98 @@
+{
+  "run_id": "replay_20261010T180816Z_e1202e",
+  "capability_id": "plumbline.place_hold",
+  "capability_version": "0.1.0",
+  "started_at": "2026-10-10T18:08:16.667404+00:00",
+  "duration_ms": 15273,
+  "category": "SUCCESS",
+  "code": "NONE",
+  "outcome": "Hold Result",
+  "outputs": {},
+  "error": null,
+  "steps": [
+    {
+      "step_id": "s01_set_value_operator_id",
+      "status": "ok",
+      "rung": "label",
+      "rung_cost": 140,
+      "note": null
+    },
+    {
+      "step_id": "s02_set_value_password",
+      "status": "ok",
+      "rung": "label",
+      "rung_cost": 140,
+      "note": null
+    },
+    {
+      "step_id": "s03_invoke_f5_sign_on",
+      "status": "ok",
+      "rung": "role_name",
+      "rung_cost": 100,
+      "note": null
+    },
+    {
+      "step_id": "s04_select_search_by",
+      "status": "ok",
+      "rung": "label",
+      "rung_cost": 140,
+      "note": null
+    },
+    {
+      "step_id": "s05_set_value_value",
+      "status": "ok",
+      "rung": "label",
+      "rung_cost": 140,
+      "note": null
+    },
+    {
+      "step_id": "s06_invoke_f5_search",
+      "status": "ok",
+      "rung": "role_name",
+      "rung_cost": 100,
+      "note": null
+    },
+    {
+      "step_id": "s07_invoke_400118",
+      "status": "ok",
+      "rung": "role_name",
+      "rung_cost": 100,
+      "note": null
+    },
+    {
+      "step_id": "s08_invoke_hold",
+      "status": "ok",
+      "rung": "role_name",
+      "rung_cost": 100,
+      "note": null
+    },
+    {
+      "step_id": "s09_select_reason",
+      "status": "ok",
+      "rung": "label",
+      "rung_cost": 140,
+      "note": null
+    },
+    {
+      "step_id": "s10_invoke_f8_review",
+      "status": "ok",
+      "rung": "role_name",
+      "rung_cost": 100,
+      "note": null
+    },
+    {
+      "step_id": "s11_invoke_f10_post_hold",
+      "status": "ok",
+      "rung": "role_name",
+      "rung_cost": 100,
+      "note": null
+    }
+  ],
+  "drift": {
+    "steps_resolved": 11,
+    "first_choice": 11
+  },
+  "classifier_calls": 1,
+  "llm_calls": 0,
+  "escalated_to_human": true
+}

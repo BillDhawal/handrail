@@ -1,0 +1,29 @@
+{"seq": 1, "kind": "screen", "name": "Operator Sign On"}
+{"seq": 2, "kind": "dispatched", "name": "s01_set_value_operator_id"}
+{"seq": 3, "kind": "observed", "name": "s01_set_value_operator_id"}
+{"seq": 4, "kind": "screen", "name": "Operator Sign On"}
+{"seq": 5, "kind": "dispatched", "name": "s02_set_value_password"}
+{"seq": 6, "kind": "observed", "name": "s02_set_value_password"}
+{"seq": 7, "kind": "screen", "name": "Operator Sign On"}
+{"seq": 8, "kind": "dispatched", "name": "s03_invoke_f5_sign_on"}
+{"seq": 9, "kind": "observed", "name": "s03_invoke_f5_sign_on"}
+{"seq": 10, "kind": "screen", "name": "Member Inquiry"}
+{"seq": 11, "kind": "dispatched", "name": "s04_select_search_by"}
+{"seq": 12, "kind": "observed", "name": "s04_select_search_by"}
+{"seq": 13, "kind": "screen", "name": "Member Inquiry"}
+{"seq": 14, "kind": "dispatched", "name": "s05_set_value_value"}
+{"seq": 15, "kind": "observed", "name": "s05_set_value_value"}
+{"seq": 16, "kind": "screen", "name": "Member Inquiry"}
+{"seq": 17, "kind": "dispatched", "name": "s06_invoke_f5_search"}
+{"seq": 18, "kind": "observed", "name": "s06_invoke_f5_search"}
+{"seq": 19, "kind": "screen", "name": "Member Inquiry Results"}
+{"seq": 20, "kind": "screen", "name": "Member Record"}
+{"seq": 21, "kind": "screen", "name": "Place Account Hold"}
+{"seq": 22, "kind": "dispatched", "name": "s09_select_reason"}
+{"seq": 23, "kind": "observed", "name": "s09_select_reason"}
+{"seq": 24, "kind": "screen", "name": "Place Account Hold"}
+{"seq": 25, "kind": "dispatched", "name": "s10_invoke_f8_review"}
+{"seq": 26, "kind": "observed", "name": "s10_invoke_f8_review"}
+{"seq": 27, "kind": "screen", "name": "Hold Review"}
+{"seq": 28, "kind": "dispatched", "name": "s11_invoke_f10_post_hold"}
+{"seq": 29, "kind": "observed", "name": "s11_invoke_f10_post_hold"}

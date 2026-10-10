@@ -1,0 +1,26 @@
+{
+  "run_id": "replay_20261010T180816Z_efe3e7",
+  "capability_id": "plumbline.place_hold",
+  "capability_version": "0.1.0",
+  "started_at": "2026-10-10T18:08:16.524065+00:00",
+  "duration_ms": 0,
+  "category": "HARD_FAILURE",
+  "code": "INVALID_INPUT",
+  "outcome": null,
+  "outputs": {},
+  "error": {
+    "code": "INVALID_INPUT",
+    "message": "member_number does not match '^[0-9]{6}$': '12'",
+    "step_id": null,
+    "expected": null,
+    "observed": null
+  },
+  "steps": [],
+  "drift": {
+    "steps_resolved": 0,
+    "first_choice": 0
+  },
+  "classifier_calls": 0,
+  "llm_calls": 0,
+  "escalated_to_human": false
+}

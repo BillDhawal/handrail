@@ -6,7 +6,7 @@ capability; replay is deterministic with no model in the loop; when a check fail
 classifier, bounded model, then human is climbed, and every rung only proposes.
 
 Read first: `docs/HANDOFF.md` (where we are), `docs/PLAN.md` (what is next, file by file),
-`docs/DESIGN.md` (why). Do not re-derive the design; it was researched by six agents and approved.
+`docs/DESIGN.md` (why), `REPORT.md` (the write-up the take-home asks for). Do not re-derive the design; it was researched by six agents and approved.
 
 ## How we build together
 
