@@ -23,6 +23,7 @@ import json
 import os
 import sys
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -119,6 +120,12 @@ async def author_command(args: argparse.Namespace, model: Any = None) -> int:
     )
     try:
         capability = compile_trace(source)
+        if args.probe:
+            spec = capability.model_dump()
+            for step in spec["steps"]:
+                if step["effect"]["kind"] == "commit":
+                    step["effect"]["probe"] = args.probe
+            capability = Capability.model_validate(spec)
     except CompileError as exc:
         print("not compiled:")
         for reason in exc.reasons:
@@ -132,14 +139,57 @@ async def author_command(args: argparse.Namespace, model: Any = None) -> int:
     return 0
 
 
-def plumbline_check(base_url: str) -> Check:
-    """Ask PLUMBLINE's record store whether the share is on hold. Never the screen."""
+def _share(base_url: str, share_id: str) -> dict[str, Any]:
+    with urllib.request.urlopen(f"{base_url}/__test__/share/{share_id}") as resp:
+        return dict(json.load(resp))
+
+
+def hold_exists(base_url: str) -> Check:
+    """For a card that posts a hold: the record store says the share is on hold."""
 
     async def check(inputs: dict[str, Any], result: RunResult) -> bool:
-        with urllib.request.urlopen(f"{base_url}/__test__/share/{inputs['share_id']}") as resp:
-            return bool(json.load(resp).get("status") == "HOLD")
+        return _share(base_url, inputs["share_id"]).get("status") == "HOLD"
 
     return check
+
+
+def balance_matches(base_url: str) -> Check:
+    """For a card that reads a balance: what it read is what the record store holds."""
+
+    async def check(inputs: dict[str, Any], result: RunResult) -> bool:
+        stored = _share(base_url, inputs["share_id"]).get("balance")
+        return bool(stored) and result.outputs.get("balance") == stored
+
+    return check
+
+
+#: Every independent check the gate knows, by name. A check asks the record store, never
+#: the screen; a card names the one that proves its outcome.
+CHECKS: dict[str, Callable[[str], Check]] = {
+    "hold_exists": hold_exists,
+    "balance_matches": balance_matches,
+}
+
+
+def check_for(capability: Capability, named: str | None = None) -> str:
+    """Which check proves this card did its job: named on the command line, or read off the card.
+
+    A commit step's `probe` names it. A card with no commit that outputs a balance is checked
+    by the balance. Anything else must be named; the gate never passes a plate unchecked.
+    """
+    if named:
+        return named
+    commits = [s for s in capability.steps if s.effect.kind == "commit"]
+    for step in commits:
+        if step.effect.probe:
+            return step.effect.probe
+    if commits:
+        return "hold_exists"  # the one commit PLUMBLINE has; `author --probe` names others
+    if any(o.name == "balance" for o in capability.outputs):
+        return "balance_matches"
+    raise SystemExit(
+        f"no independent check known for {capability.ref}; pass --check one of {sorted(CHECKS)}"
+    )
 
 
 async def verify_command(args: argparse.Namespace) -> int:
@@ -150,12 +200,16 @@ async def verify_command(args: argparse.Namespace) -> int:
     env = {**os.environ, **pairs(args.env)}
     trials = [pairs(t.split(",")) for t in args.trial]
     root = Path(args.evidence)
+    name = check_for(capability, args.check)
+    if name not in CHECKS:
+        raise SystemExit(f"unknown check {name!r}; known: {sorted(CHECKS)}")
+    print(f"independent check: {name}")
     verdict = await verify(
         capability,
         trials,
         lambda: BrowserSurface(capability.safety.allowed_hosts, headless=not args.headed),
         lambda n: Recorder(new_run_id(f"verify{n}"), root=root),
-        plumbline_check(env["BASE_URL"]),
+        CHECKS[name](env["BASE_URL"]),
         env,
     )
     for number, plate in enumerate(verdict.plates, start=1):
@@ -189,11 +243,13 @@ def register(sub: Any) -> None:
     a.add_argument("--evidence", default="evidence/runs")
     a.add_argument("--headed", action="store_true")
     a.add_argument("--video", metavar="DIR", help="record the browser to DIR as .webm")
+    a.add_argument("--probe", choices=sorted(CHECKS), help="the check that proves each commit")
     a.set_defaults(run=author_command)
 
     v = sub.add_parser("verify", help="three clean replays with an independent check")
     v.add_argument("capability")
     v.add_argument("--trial", action="append", required=True, metavar="k=v,k=v")
+    v.add_argument("--check", choices=sorted(CHECKS), help="the independent check, if needed")
     v.add_argument("--env", action="append", metavar="NAME=VALUE")
     v.add_argument("--evidence", default="evidence/runs")
     v.add_argument("--headed", action="store_true")

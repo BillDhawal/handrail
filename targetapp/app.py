@@ -162,7 +162,11 @@ def create_app(tenant: str = "quarrybrook") -> Flask:
         share = STORE.get_share(share_id)
         if share is None:
             return {"share_id": share_id, "status": None}, 404
-        return {"share_id": share.share_id, "status": share.status}
+        return {
+            "share_id": share.share_id,
+            "status": share.status,
+            "balance": share.balance_display,
+        }
 
     @app.post("/__test__/reset")
     def reset():

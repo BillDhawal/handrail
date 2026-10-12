@@ -76,6 +76,7 @@ def test_the_share_status_endpoint_reads_the_store_not_the_screen(monkeypatch):
     monkeypatch.setenv("HANDRAIL_ALLOW_FAULTS", "1")
     client = create_app("quarrybrook").test_client()
     assert client.get("/__test__/share/400226-S0002").get_json()["status"] == "HOLD"
+    assert client.get("/__test__/share/400337-S0001").get_json()["balance"] == "$750.00"
     assert client.get("/__test__/share/400118-S0001").get_json()["status"] == "ACTIVE"
     assert client.get("/__test__/share/nope").status_code == 404
 

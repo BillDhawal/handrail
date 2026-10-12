@@ -104,3 +104,43 @@ async def test_author_then_verify_end_to_end(bank: str, tmp_path: Path):
     verified = json.loads(out.read_text())
     assert verified["lifecycle"]["state"] == "verified"
     assert verified["lifecycle"]["reliability"] == {"replays": 3, "clean": 3}
+
+
+def test_the_gates_check_is_read_off_the_card_or_named():
+    from handrail.author.run import check_for
+    from handrail.schema.capability import Capability
+
+    from ..factory import place_hold
+
+    hold = Capability.model_validate(place_hold())
+    assert check_for(hold) == "hold_exists"  # the commit's probe names it
+    spec = place_hold()
+    for s in spec["steps"]:
+        s["effect"].pop("probe", None)
+    assert check_for(Capability.model_validate(spec)) == "hold_exists"  # a commit with no probe
+    assert check_for(hold, "balance_matches") == "balance_matches"
+    spec = place_hold()
+    for s in spec["steps"]:
+        s["effect"] = {"kind": "read"} if s["effect"]["kind"] == "commit" else s["effect"]
+    spec["outputs"] = [{"name": "balance", "source": {"step": "read_result"}}]
+    assert check_for(Capability.model_validate(spec)) == "balance_matches"
+    spec["outputs"] = []
+    with pytest.raises(SystemExit, match="no independent check known"):
+        check_for(Capability.model_validate(spec))
+
+
+async def test_balance_matches_asks_the_record_store_not_the_screen(bank: str):
+    from handrail.author.run import balance_matches
+    from handrail.schema.errors import ErrorCode, OutcomeCategory
+    from handrail.schema.results import RunResult
+
+    def result(balance: str) -> RunResult:
+        return RunResult(
+            run_id="r", capability_id="c", capability_version="1", started_at="now",
+            duration_ms=1, category=OutcomeCategory.SUCCESS, code=ErrorCode.NONE,
+            outcome="member", outputs={"balance": balance},
+        )  # fmt: skip
+
+    check = balance_matches(f"http://{bank}")
+    assert await check({"share_id": "400337-S0001"}, result("$750.00"))
+    assert not await check({"share_id": "400337-S0001"}, result("$1.00"))
