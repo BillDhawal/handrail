@@ -88,7 +88,8 @@ async def author_command(args: argparse.Namespace, model: Any = None) -> int:
     recorder = Recorder(new_run_id("author"), root=Path(args.evidence))
     for name in secrets & values.keys():
         recorder.add_secret(values[name])
-    surface = BrowserSurface(args.allow, headless=not args.headed)
+    video = Path(args.video) if args.video else None
+    surface = BrowserSurface(args.allow, headless=not args.headed, video_dir=video)
     env = {**os.environ, **pairs(args.env)}
     session = Session(surface, inputs=values, env=env)
     book, confirm = TraceRecorder(recorder), terminal_confirm(args.by, args.confirm)
@@ -187,6 +188,7 @@ def register(sub: Any) -> None:
     a.add_argument("--out", required=True)
     a.add_argument("--evidence", default="evidence/runs")
     a.add_argument("--headed", action="store_true")
+    a.add_argument("--video", metavar="DIR", help="record the browser to DIR as .webm")
     a.set_defaults(run=author_command)
 
     v = sub.add_parser("verify", help="three clean replays with an independent check")

@@ -103,7 +103,8 @@ async def replay(args: argparse.Namespace) -> int:
     recorder = Recorder(new_run_id("replay"), root=Path(args.evidence))
     journal_path = Path(args.journal) if args.journal else recorder.dir / "journal.jsonl"
     journal = Journal.load(journal_path)
-    surface = BrowserSurface(capability.safety.allowed_hosts, headless=not args.headed)
+    video = Path(args.video) if args.video else None
+    surface = BrowserSurface(capability.safety.allowed_hosts, not args.headed, video_dir=video)
     classifier = referee(args.classifier)
     bridge = None
     if args.bridge:
@@ -189,6 +190,7 @@ def parser() -> argparse.ArgumentParser:
     r.add_argument("--evidence", default="evidence/runs", help="where run records go")
     r.add_argument("--timeout-ms", type=int, default=8000, help="settle timeout per step")
     r.add_argument("--headed", action="store_true", help="show the browser")
+    r.add_argument("--video", metavar="DIR", help="record the browser to DIR as .webm")
     r.add_argument("--classifier", choices=["claude", "jev", "laya"], help="rung one's referee")
     r.add_argument("--episodes", help="SQLite notebook for every escalation, e.g. episodes.db")
     r.add_argument("--bridge", metavar="MODEL", help="rung two's scout, a chat model name")

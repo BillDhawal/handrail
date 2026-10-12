@@ -5,6 +5,7 @@ from __future__ import annotations
 import threading
 import time
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 
@@ -173,3 +174,12 @@ async def test_one_hold_link_per_share_survives_when_probed_inside_its_row(waite
     assert control.row == "400118-S0005"
     kept = await surviving(control, authoring.probe(holds[1].handle, control))
     assert [r.rung for r in kept] == ["role_name", "text"]
+
+
+async def test_a_run_can_record_itself_as_video(bank: str, tmp_path: Path):
+    s = BrowserSurface(allowed_hosts=[bank], video_dir=tmp_path / "video")
+    await s.open(f"http://{bank}/signon")
+    await s.observe()
+    await s.close()
+    films = list((tmp_path / "video").glob("*.webm"))
+    assert len(films) == 1 and films[0].stat().st_size > 0

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from pathlib import Path
 from typing import Any, cast
 from urllib.parse import urlparse
 
@@ -55,9 +56,12 @@ NAVIGATION_GRACE_MS = 1500
 class BrowserSurface:
     kind = "browser"
 
-    def __init__(self, allowed_hosts: list[str], headless: bool = True) -> None:
+    def __init__(
+        self, allowed_hosts: list[str], headless: bool = True, video_dir: Path | None = None
+    ) -> None:
         self.allowed_hosts = set(allowed_hosts)
         self.headless = headless
+        self.video_dir = video_dir  # record every page of the run as .webm, for a demo or an audit
         self._pw: Playwright | None = None
         self._browser: Browser | None = None
         self._page: Page | None = None
@@ -78,7 +82,10 @@ class BrowserSurface:
         if self._page is None:
             self._pw = await async_playwright().start()
             self._browser = await self._pw.chromium.launch(headless=self.headless)
-            context = await self._browser.new_context()
+            context = await self._browser.new_context(
+                record_video_dir=str(self.video_dir) if self.video_dir else None,
+                record_video_size={"width": 1100, "height": 700} if self.video_dir else None,
+            )
             await context.route("**/*", self._gate)
             self._page = await context.new_page()
             self._page.on("dialog", self._on_dialog)
@@ -163,6 +170,8 @@ class BrowserSurface:
         return EvidenceBundle(text="\n".join(t for t in texts if t), screenshot_png=png)
 
     async def close(self) -> None:
+        if self._page is not None and self.video_dir:
+            await self._page.context.close()  # flushes the recording to disk
         if self._browser is not None:
             await self._browser.close()
         if self._pw is not None:

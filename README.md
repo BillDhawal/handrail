@@ -26,6 +26,8 @@ mainframe messages, two tenants with different markup, faults armed on demand.
 - [evidence/examples/](evidence/examples/) — the real discovery run and six replays, with logs.
 - [docs/DESIGN.md](docs/DESIGN.md), [docs/PLAN.md](docs/PLAN.md), [docs/HANDOFF.md](docs/HANDOFF.md)
   — the architecture, the build order, and where things stand.
+- [docs/HANDRAIL-GUIDE.pdf](docs/HANDRAIL-GUIDE.pdf) — the user guide with screenshots: install, tests,
+  every command, the console, recording a run, troubleshooting.
 - [Handrail in Five Pictures](https://billdhawal.github.io/handrail/five-pictures.html) and
   [Handrail, as built](https://billdhawal.github.io/handrail/as-built.html) — illustrated,
   animated walkthroughs.
