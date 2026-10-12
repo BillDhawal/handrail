@@ -9,6 +9,11 @@ framesets, no ids, no labels, table layout, per-render form tokens, terse mainfr
 tenants with different markup, and faults armed on demand. Everything below was run live; the
 runs are in `/evidence/examples/`.
 
+Where to look: the code is at https://github.com/BillDhawal/handrail; a user guide with
+screenshots of every command is at [docs/HANDRAIL-GUIDE.pdf](docs/HANDRAIL-GUIDE.pdf); two
+illustrated walkthroughs are at https://billdhawal.github.io/handrail/ (the five analogies the
+code is written in, and the architecture and workflows as built, with live run data).
+
 ## 1. Architecture
 
 Three layers, one rule between them. **Schema** (`schema/`) is the artifact and the result
