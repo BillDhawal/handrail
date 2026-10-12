@@ -1,0 +1,581 @@
+{
+  "schema_version": "capability/2",
+  "id": "plumbline.read_balance",
+  "version": "0.1.0",
+  "title": "Sign on as the operator, search for the member by member number, open the member record, then use act with the read verb on the Balance cell of the given share so the balance is returned as an output, and finish on the member record screen.",
+  "lifecycle": {
+    "state": "approved",
+    "approved_by": "dhawal",
+    "approved_at": "2026-10-12T03:13:19+00:00",
+    "note": "",
+    "reliability": {
+      "replays": 3,
+      "clean": 3
+    }
+  },
+  "surface": {
+    "kind": "browser",
+    "entry": "{{env.BASE_URL}}/signon",
+    "requires": []
+  },
+  "inputs": [
+    {
+      "name": "operator_id",
+      "type": "string",
+      "required": true,
+      "sensitivity": "low",
+      "description": ""
+    },
+    {
+      "name": "password",
+      "type": "string",
+      "required": true,
+      "sensitivity": "secret",
+      "description": ""
+    },
+    {
+      "name": "member_number",
+      "type": "string",
+      "required": true,
+      "sensitivity": "low",
+      "description": ""
+    },
+    {
+      "name": "share_id",
+      "type": "string",
+      "required": true,
+      "sensitivity": "low",
+      "description": ""
+    }
+  ],
+  "outputs": [
+    {
+      "name": "balance",
+      "type": "string",
+      "source": {
+        "step": "s08_read_balance"
+      },
+      "produced_on": [
+        "Member Record"
+      ]
+    }
+  ],
+  "screens": {
+    "Operator Sign On": {
+      "signature": "sha256:2784006a9f88b7ec",
+      "label": "Operator Sign On",
+      "paths": [
+        ":div.hdr",
+        ":form/table.box",
+        ":form/table.box/tbody/tr/td/input.btn",
+        ":form/table.box/tbody/tr/td/input[opid]",
+        ":form/table.box/tbody/tr/td/input[pw]",
+        ":form/table.box/tbody/tr/td/select[br]"
+      ]
+    },
+    "Member Inquiry": {
+      "signature": "sha256:600f0fd50430de9d",
+      "label": "Member Inquiry",
+      "paths": [
+        "menu:div.hdr",
+        "menu:table.grid",
+        "menu:table.grid/tbody/tr/td/a",
+        "work:div.hdr",
+        "work:form/table.box",
+        "work:form/table.box/tbody/tr/td/input.btn",
+        "work:form/table.box/tbody/tr/td/input[sval]",
+        "work:form/table.box/tbody/tr/td/select[sby]"
+      ]
+    },
+    "Member Search Results": {
+      "signature": "sha256:b21a3899297f810f",
+      "label": "Member Search Results",
+      "paths": [
+        "menu:div.hdr",
+        "menu:table.grid",
+        "menu:table.grid/tbody/tr/td/a",
+        "work:div.hdr",
+        "work:form/table.box",
+        "work:form/table.box/tbody/tr/td/input.btn",
+        "work:form/table.box/tbody/tr/td/input[sval]",
+        "work:form/table.box/tbody/tr/td/select[sby]",
+        "work:table.grid",
+        "work:table.grid/tbody/tr/td/a"
+      ]
+    },
+    "Member Record": {
+      "signature": "sha256:a89ebfb282a5f92c",
+      "label": "Member Record",
+      "paths": [
+        "menu:div.hdr",
+        "menu:table.grid",
+        "menu:table.grid/tbody/tr/td/a",
+        "work:div.hdr",
+        "work:table.box",
+        "work:table.grid",
+        "work:table.grid/tbody/tr/td/a"
+      ]
+    }
+  },
+  "targets": {
+    "textbox_operator_id": {
+      "role": "textbox",
+      "name": {
+        "eq": "Operator ID"
+      },
+      "supports": {
+        "set_value": [
+          "string"
+        ],
+        "read": []
+      },
+      "scope": [],
+      "ladder": [
+        {
+          "rung": "label",
+          "cost": 140,
+          "value": "Operator ID"
+        },
+        {
+          "rung": "native",
+          "cost": 10000000,
+          "surface": "browser",
+          "value": "[name=\"opid\"]"
+        }
+      ],
+      "fingerprint": {
+        "over": [
+          "role",
+          "name",
+          "supports",
+          "ancestor_roles"
+        ],
+        "value": "sha256:d962f3a89c041309"
+      }
+    },
+    "textbox_password": {
+      "role": "textbox",
+      "name": {
+        "eq": "Password"
+      },
+      "supports": {
+        "set_value": [
+          "string"
+        ],
+        "read": []
+      },
+      "scope": [],
+      "ladder": [
+        {
+          "rung": "label",
+          "cost": 140,
+          "value": "Password"
+        },
+        {
+          "rung": "native",
+          "cost": 10000000,
+          "surface": "browser",
+          "value": "[name=\"pw\"]"
+        }
+      ],
+      "fingerprint": {
+        "over": [
+          "role",
+          "name",
+          "supports",
+          "ancestor_roles"
+        ],
+        "value": "sha256:c9ded650d6887b0c"
+      }
+    },
+    "button_f5_sign_on": {
+      "role": "button",
+      "name": {
+        "eq": "F5=Sign On"
+      },
+      "supports": {
+        "invoke": []
+      },
+      "scope": [],
+      "ladder": [
+        {
+          "rung": "role_name",
+          "cost": 100
+        },
+        {
+          "rung": "text",
+          "cost": 180,
+          "value": "F5=Sign On"
+        }
+      ],
+      "fingerprint": {
+        "over": [
+          "role",
+          "name",
+          "supports",
+          "ancestor_roles"
+        ],
+        "value": "sha256:4e09ff883a486e0b"
+      }
+    },
+    "combobox_search_by_work": {
+      "role": "combobox",
+      "name": {
+        "eq": "Search by"
+      },
+      "supports": {
+        "select": [
+          "string"
+        ],
+        "read": []
+      },
+      "scope": [
+        {
+          "role": "frame",
+          "name": "work"
+        }
+      ],
+      "ladder": [
+        {
+          "rung": "label",
+          "cost": 140,
+          "value": "Search by"
+        },
+        {
+          "rung": "native",
+          "cost": 10000000,
+          "surface": "browser",
+          "value": "[name=\"sby\"]"
+        }
+      ],
+      "fingerprint": {
+        "over": [
+          "role",
+          "name",
+          "supports",
+          "ancestor_roles"
+        ],
+        "value": "sha256:f4e1dff6ca7ce1a1"
+      }
+    },
+    "textbox_value_work": {
+      "role": "textbox",
+      "name": {
+        "eq": "Value"
+      },
+      "supports": {
+        "set_value": [
+          "string"
+        ],
+        "read": []
+      },
+      "scope": [
+        {
+          "role": "frame",
+          "name": "work"
+        }
+      ],
+      "ladder": [
+        {
+          "rung": "label",
+          "cost": 140,
+          "value": "Value"
+        },
+        {
+          "rung": "native",
+          "cost": 10000000,
+          "surface": "browser",
+          "value": "[name=\"sval\"]"
+        }
+      ],
+      "fingerprint": {
+        "over": [
+          "role",
+          "name",
+          "supports",
+          "ancestor_roles"
+        ],
+        "value": "sha256:f29e62019118aeda"
+      }
+    },
+    "button_f5_search_work": {
+      "role": "button",
+      "name": {
+        "eq": "F5=Search"
+      },
+      "supports": {
+        "invoke": []
+      },
+      "scope": [
+        {
+          "role": "frame",
+          "name": "work"
+        }
+      ],
+      "ladder": [
+        {
+          "rung": "role_name",
+          "cost": 100
+        },
+        {
+          "rung": "text",
+          "cost": 180,
+          "value": "F5=Search"
+        }
+      ],
+      "fingerprint": {
+        "over": [
+          "role",
+          "name",
+          "supports",
+          "ancestor_roles"
+        ],
+        "value": "sha256:260f73541b33d100"
+      }
+    },
+    "link_input_member_number_work": {
+      "role": "link",
+      "name": {
+        "eq": "{{input.member_number}}"
+      },
+      "supports": {
+        "invoke": []
+      },
+      "scope": [
+        {
+          "role": "frame",
+          "name": "work"
+        }
+      ],
+      "ladder": [
+        {
+          "rung": "role_name",
+          "cost": 100
+        },
+        {
+          "rung": "text",
+          "cost": 180,
+          "value": "400118"
+        }
+      ],
+      "fingerprint": {
+        "over": [
+          "role",
+          "supports",
+          "ancestor_roles"
+        ],
+        "value": "sha256:d4858cbf61388f62"
+      }
+    },
+    "cell_balance_work_input_share_id": {
+      "role": "cell",
+      "supports": {
+        "read": []
+      },
+      "scope": [
+        {
+          "role": "frame",
+          "name": "work"
+        },
+        {
+          "role": "row",
+          "name": "{{input.share_id}}"
+        }
+      ],
+      "ladder": [
+        {
+          "rung": "native",
+          "cost": 10000000,
+          "surface": "browser",
+          "value": "td:nth-child(3)"
+        }
+      ],
+      "fingerprint": {
+        "over": [
+          "role",
+          "supports",
+          "ancestor_roles"
+        ],
+        "value": "sha256:3b4f5a3c2052dec1"
+      }
+    }
+  },
+  "steps": [
+    {
+      "id": "s01_set_value_operator_id",
+      "intent": "set_value Operator ID",
+      "screen": "Operator Sign On",
+      "op": {
+        "verb": "set_value",
+        "value": "{{input.operator_id}}"
+      },
+      "target": "textbox_operator_id",
+      "effect": {
+        "kind": "stage",
+        "proposed_by": "model"
+      },
+      "settle": {
+        "kind": "target_present",
+        "step": "s02_set_value_password"
+      }
+    },
+    {
+      "id": "s02_set_value_password",
+      "intent": "set_value Password",
+      "screen": "Operator Sign On",
+      "op": {
+        "verb": "set_value",
+        "value": "{{input.password}}"
+      },
+      "target": "textbox_password",
+      "effect": {
+        "kind": "stage",
+        "proposed_by": "model"
+      },
+      "settle": {
+        "kind": "target_present",
+        "step": "s03_invoke_f5_sign_on"
+      }
+    },
+    {
+      "id": "s03_invoke_f5_sign_on",
+      "intent": "invoke F5=Sign On",
+      "screen": "Operator Sign On",
+      "op": {
+        "verb": "invoke"
+      },
+      "target": "button_f5_sign_on",
+      "effect": {
+        "kind": "navigate",
+        "proposed_by": "model",
+        "confirmed_by": "dhawal"
+      },
+      "settle": {
+        "kind": "screen_is",
+        "screen": "Member Inquiry"
+      },
+      "expect": {
+        "screen_in": [
+          "Member Inquiry"
+        ]
+      }
+    },
+    {
+      "id": "s04_select_search_by",
+      "intent": "select Search by",
+      "screen": "Member Inquiry",
+      "op": {
+        "verb": "select",
+        "value": "Member Number"
+      },
+      "target": "combobox_search_by_work",
+      "effect": {
+        "kind": "stage",
+        "proposed_by": "model"
+      },
+      "settle": {
+        "kind": "target_present",
+        "step": "s05_set_value_value"
+      }
+    },
+    {
+      "id": "s05_set_value_value",
+      "intent": "set_value Value",
+      "screen": "Member Inquiry",
+      "op": {
+        "verb": "set_value",
+        "value": "{{input.member_number}}"
+      },
+      "target": "textbox_value_work",
+      "effect": {
+        "kind": "stage",
+        "proposed_by": "model"
+      },
+      "settle": {
+        "kind": "target_present",
+        "step": "s06_invoke_f5_search"
+      }
+    },
+    {
+      "id": "s06_invoke_f5_search",
+      "intent": "invoke F5=Search",
+      "screen": "Member Inquiry",
+      "op": {
+        "verb": "invoke"
+      },
+      "target": "button_f5_search_work",
+      "effect": {
+        "kind": "navigate",
+        "proposed_by": "model",
+        "confirmed_by": "dhawal"
+      },
+      "settle": {
+        "kind": "screen_is",
+        "screen": "Member Search Results"
+      },
+      "expect": {
+        "screen_in": [
+          "Member Search Results"
+        ]
+      }
+    },
+    {
+      "id": "s07_invoke_400118",
+      "intent": "invoke 400118",
+      "screen": "Member Search Results",
+      "op": {
+        "verb": "invoke"
+      },
+      "target": "link_input_member_number_work",
+      "effect": {
+        "kind": "navigate",
+        "proposed_by": "model"
+      },
+      "settle": {
+        "kind": "screen_is",
+        "screen": "Member Record"
+      },
+      "expect": {
+        "screen_in": [
+          "Member Record"
+        ]
+      }
+    },
+    {
+      "id": "s08_read_balance",
+      "intent": "read $42,100.50",
+      "screen": "Member Record",
+      "op": {
+        "verb": "read"
+      },
+      "target": "cell_balance_work_input_share_id",
+      "effect": {
+        "kind": "read",
+        "proposed_by": "model"
+      },
+      "settle": {
+        "kind": "screen_is",
+        "screen": "Member Record"
+      }
+    }
+  ],
+  "outcomes": {
+    "Member Record": {
+      "category": "SUCCESS",
+      "code": "NONE",
+      "description": ""
+    }
+  },
+  "safety": {
+    "allowed_hosts": [
+      "127.0.0.1:8081"
+    ],
+    "allowed_apps": [],
+    "allowed_verbs": [
+      "invoke",
+      "read",
+      "select",
+      "set_value"
+    ]
+  }
+}
