@@ -96,3 +96,9 @@ async def test_an_evening_that_never_finishes_stops_at_the_turn_limit():
     result = await author(model, g, "dither", max_turns=3)
     assert not result.finished and result.outcome is None
     assert len(result.trace) <= 4
+
+
+def test_the_card_tells_the_guest_to_read_what_the_caller_needs_back():
+    from handrail.author.agent import SYSTEM_PROMPT
+
+    assert 'act(index, "read")' in SYSTEM_PROMPT and "before you call finish" in SYSTEM_PROMPT

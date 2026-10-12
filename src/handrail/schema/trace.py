@@ -36,4 +36,5 @@ class Turn:
     rungs: tuple[Rung, ...] = ()
     fingerprint: Fingerprint | None = None
     row: str | None = None  # the table row the control sat in, by its first cell
+    column: str | None = None  # the column header above it, if the table has one
     ancestors: tuple[str, ...] = ()  # container roles, so a fingerprint can be retaken

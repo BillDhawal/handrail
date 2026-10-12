@@ -202,3 +202,19 @@ def test_every_hole_is_reported_not_just_the_first():
     turns = trace()[:-1]
     turns[2] = open_member(rungs=())
     assert len(refused(turns, None).reasons) == 2
+
+
+def test_a_read_of_a_table_cell_is_named_after_its_row_and_column_not_its_text():
+    turns = trace()
+    turns[6] = act(
+        7, "read", "cell", "$42,100.50", POST, POST, effect="read", row="400118-S0001",
+        column="Balance", handle={"frame": "work", "selector": "x"},
+    )  # fmt: skip
+    values = {**VALUES, "share_id": "400118-S0001"}
+    inputs = [*INPUTS, {"name": "share_id"}]
+    cap = compile_trace(source(turns, values=values, inputs=inputs))
+    # the row became a blank, so only the column names the output
+    assert [o.name for o in cap.outputs] == ["balance"]
+    target = cap.targets[cap.steps[3].target or ""]
+    assert target.name is None and target.scope[1].name == "{{input.share_id}}"
+    assert "42" not in (cap.steps[3].id + str(target.model_dump()))

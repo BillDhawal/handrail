@@ -107,3 +107,10 @@ def test_the_browser_refuses_a_rung_it_cannot_follow():
     foreign = Rung(rung="native", cost=10_000_000, surface="terminal", value="row 3 col 12")
     with pytest.raises(ValueError, match="cannot follow"):
         query_for(foreign, "textbox", "")
+
+
+def test_a_cell_is_found_by_its_column_inside_its_row_never_by_its_text():
+    cell = Control("cell", "$42,100.50", row="400118-S0001", column="Balance", col_index=3)
+    rungs = candidates(cell)
+    assert [r.rung for r in rungs] == ["native"]
+    assert rungs[0].value == "td:nth-child(3)"

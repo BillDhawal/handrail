@@ -48,6 +48,9 @@ Rules:
   input names given.
 - Label every new screen with assert_screen before you act on it. Label the final screen,
   then finish.
+- The card cannot see the screen the way you can. Anything the caller needs back, a balance,
+  a confirmation number, a status, must be read with act(index, "read") on that cell or line
+  before you call finish. Reading it is what makes it an output.
 - If a call is refused, read why and choose another row. Do not repeat a refused call.
 - Say nothing else. Use the tools."""
 

@@ -50,6 +50,10 @@ class Control:
     ancestors: tuple[str, ...] = ()
     #: The first cell of the table row this control sits in, if any: "the Hold link in row X".
     row: str = ""
+    #: The header of the column this control sits in, if the table has one: "Balance".
+    column: str = ""
+    #: Which column, 1-based, so a cell can be found by position inside its row.
+    col_index: int = 0
     disabled: bool = False
     readonly: bool = False
     visible: bool = True

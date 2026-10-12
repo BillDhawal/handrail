@@ -104,7 +104,9 @@ class _Writer:
         if turn.row:
             scope.append({"role": "row", "name": self.unliteral(turn.row)})
         name = self.unliteral(turn.name or "")
-        key = _slug(f"{turn.role}_{name}_{'_'.join(s['name'] for s in scope)}")
+        if turn.role == "cell" and not name.startswith("{{"):
+            name = ""  # a cell's text is a value; the row and column say which cell it is
+        key = _slug(f"{turn.role}_{name or turn.column or ''}_{'_'.join(s['name'] for s in scope)}")
         if key not in self.targets:
             spec: dict[str, Any] = {
                 "role": turn.role,
@@ -132,6 +134,16 @@ class _Writer:
         control = Control(turn.role or "", turn.name or "", ancestors=turn.ancestors)
         over = [f for f in fields_for(control) if not (blank and f == "name")]
         return fingerprint_over(control, over).model_dump()
+
+    def output_name(self, turn: Turn, step_id: str) -> str:
+        """A balance cell is named after its row and column, never after "$42,100.50"."""
+        parts = [self.unliteral(turn.row or ""), turn.column or ""]
+        named = "_".join(_slug(p) for p in parts if p and not p.startswith("{{"))
+        if named:
+            return named
+        if turn.role in ("cell",):  # a cell with no headers: its text is a value, not a name
+            return _slug(step_id)
+        return _slug(turn.name or step_id)
 
     def check_value(self, turn: Turn) -> None:
         if not turn.value:
@@ -162,7 +174,8 @@ class _Writer:
             if screen is None or after is None or key is None:
                 continue
             nxt = acts[position + 1] if position + 1 < len(acts) else None
-            step_id = f"s{position + 1:02d}_{turn.verb}_{_slug(turn.name or turn.role or '')}"
+            what = turn.column or turn.name if turn.role == "cell" else turn.name
+            step_id = f"s{position + 1:02d}_{turn.verb}_{_slug(what or turn.role or '')}"
             settle: dict[str, Any]
             if after != screen:
                 settle = {"kind": "screen_is", "screen": after}
@@ -190,7 +203,7 @@ class _Writer:
                 # Only a read-only control is an output. Reading back a field you typed into
                 # is the model checking its work, and a card never outputs a password.
                 self.outputs.append(
-                    {"name": _slug(turn.name or step_id), "source": {"step": step_id}}
+                    {"name": self.output_name(turn, step_id), "source": {"step": step_id}}
                 )
         for i, step in enumerate(self.steps):
             if step["settle"].get("step") == "__next__":

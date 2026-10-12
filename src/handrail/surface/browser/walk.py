@@ -46,6 +46,14 @@ _HELPERS = r"""
     if (tag === 'button') return 'button';
     if (tag === 'a') return el.hasAttribute('href') ? 'link' : null;
     if (/^h[1-6]$/.test(tag)) return 'heading';
+    if (tag === 'td') {
+      // A data cell in a real grid (a table with a header row) can be read: a balance, a
+      // status. A layout table's cells are captions and spacing, and stay off the menu.
+      const table = el.closest('table');
+      if (!table || !table.querySelector('tr:first-child > th')) return null;
+      // A cell that holds a control is that control's seat, not a value to read.
+      return el.querySelector('a[href],input,select,textarea,button') ? null : 'cell';
+    }
     return null;
   };
   const nameOf = (el, role) => {
@@ -55,7 +63,9 @@ _HELPERS = r"""
     const wrap = el.closest('label'); if (wrap) return clean(wrap.textContent);
     const tag = el.tagName.toLowerCase();
     if (tag === 'input' && role === 'button') return clean(el.value) || 'Submit';
-    if (tag === 'button' || tag === 'a' || role === 'heading') return clean(el.textContent);
+    if (tag === 'button' || tag === 'a' || role === 'heading' || role === 'cell') {
+      return clean(el.textContent);
+    }
     return clean(el.getAttribute('title') || el.getAttribute('placeholder') || '');
   };
   const captionOf = el => {
@@ -88,8 +98,16 @@ _HELPERS = r"""
     const cells = tr.querySelectorAll(':scope > td, :scope > th');
     if (cells.length < 2 || cells[0].contains(el)) return '';
     return clean(cells[0].textContent); };
+  const columnOf = el => {
+    const cell = el.closest('td,th'); const tr = cell && cell.closest('tr');
+    const table = tr && tr.closest('table'); if (!cell || !table) return ['', 0];
+    const heads = table.querySelectorAll('tr:first-child > th');
+    if (!heads.length) return ['', 0];
+    const i = Array.prototype.indexOf.call(tr.children, cell);
+    return i >= 0 && heads[i] ? [clean(heads[i].textContent), i + 1] : ['', 0]; };
   const describe = (el, role) => ({ role, name: nameOf(el, role), row: rowOf(el),
-    label: ['button', 'link', 'heading'].includes(role) ? '' : captionOf(el),
+    column: columnOf(el)[0], col_index: columnOf(el)[1],
+    label: ['button', 'link', 'heading', 'cell'].includes(role) ? '' : captionOf(el),
     attr_name: el.getAttribute('name') || '', test_id: el.getAttribute('data-testid') || '',
     ancestors: ancestorsOf(el), disabled: !!el.disabled, readonly: !!el.readOnly,
     visible: visible(el), selector: selectorOf(el) });
@@ -104,7 +122,8 @@ WALK_JS = (
   if (!document.body) return { controls, structure };
   for (const el of document.body.querySelectorAll('*')) {
     const role = roleOf(el);
-    if (role || el.classList.length) structure.push(pathOf(el));
+    // Cells are rows, and rows are data: keep the chrome, ignore the rows.
+    if ((role && role !== 'cell') || el.classList.length) structure.push(pathOf(el));
     if (role) controls.push(describe(el, role));
   }
   return { controls, structure: [...new Set(structure)].sort() };
@@ -134,6 +153,8 @@ def control_from(frame: str, raw: dict[str, Any]) -> Control:
         scope=(frame,) if frame else (),
         ancestors=tuple(str(a) for a in raw["ancestors"]),
         row=str(raw.get("row", "")),
+        column=str(raw.get("column", "")),
+        col_index=int(raw.get("col_index", 0) or 0),
         disabled=bool(raw["disabled"]),
         readonly=bool(raw["readonly"]),
         visible=bool(raw["visible"]),

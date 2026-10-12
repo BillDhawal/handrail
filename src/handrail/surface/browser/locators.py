@@ -81,14 +81,17 @@ def candidates(control: Control) -> list[Rung]:
     rungs: list[Rung] = []
     if control.test_id:
         rungs.append(_rung("stable_id", control.test_id))
-    if control.name:
+    if control.name and control.role != "cell":
         rungs.append(_rung("role_name"))
     if control.label and not control.name:
         rungs.append(_rung("label", control.label))
-    if control.name:
+    if control.name and control.role != "cell":
         rungs.append(_rung("text", control.name))
     if control.attr_name:
         rungs.append(_rung("native", f"[name={_css_string(control.attr_name)}]", "browser"))
+    elif control.role == "cell" and control.col_index:
+        # A cell's text is a value, not a name. Inside its row, its column is its address.
+        rungs.append(_rung("native", f"td:nth-child({control.col_index})", "browser"))
     return rungs
 
 

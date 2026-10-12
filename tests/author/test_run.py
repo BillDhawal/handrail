@@ -52,7 +52,7 @@ def evening() -> list[AIMessage]:
         call("assert_screen", label="inquiry_results"),
         call("act", index=8, verb="invoke"),
         call("assert_screen", label="member"),
-        call("act", index=3, verb="invoke"),
+        call("act", index=7, verb="invoke"),  # rows 3 to 6 are the share's cells; 7 is Hold
         call("assert_screen", label="hold_form"),
         call("act", index=3, verb="select", value="{{input.reason}}"),
         call("act", index=7, verb="invoke"),

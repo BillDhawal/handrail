@@ -183,3 +183,18 @@ async def test_a_run_can_record_itself_as_video(bank: str, tmp_path: Path):
     await s.close()
     films = list((tmp_path / "video").glob("*.webm"))
     assert len(films) == 1 and films[0].stat().st_size > 0
+
+
+async def test_a_balance_cell_knows_its_row_and_column_and_survives_inside_the_row(
+    waiter: BrowserSurface,
+):
+    await sign_on(waiter)
+    await waiter.open(f"http://{waiter.page.url.split('/')[2]}/member/400118")
+    ops = (await waiter.observe()).operations
+    balances = [op for op in ops if op.role == "cell" and op.name.startswith("$")]
+    assert len(balances) == 2
+    authoring = BrowserAuthoring(waiter.page)
+    control = await authoring.describe(balances[0].handle)
+    assert (control.row, control.column, control.col_index) == ("400118-S0001", "Balance", 3)
+    kept = await surviving(control, authoring.probe(balances[0].handle, control))
+    assert [r.rung for r in kept] == ["native"]

@@ -152,6 +152,7 @@ class Guard:
             rungs=proposal.rungs,
             fingerprint=proposal.fingerprint,
             row=proposal.control.row or None,
+            column=proposal.control.column or None,
             ancestors=proposal.control.ancestors,
         )
         self.session.trace[-1] = turn

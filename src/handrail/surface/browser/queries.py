@@ -29,6 +29,8 @@ def to_locator(frame: Root, query: Query) -> Locator:
     if query.how == "test_id":
         return frame.get_by_test_id(query.value)
     if query.how == "role":
+        if not query.name:
+            return frame.get_by_role(cast(Any, query.role))  # any name: the scope narrows it
         name: str | re.Pattern[str] = re.compile(query.name) if query.regex else query.name
         return frame.get_by_role(cast(Any, query.role), name=name, exact=not query.regex)
     if query.how == "text":
