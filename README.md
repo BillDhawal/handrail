@@ -1,72 +1,72 @@
 # Handrail
 
-A computer-use system built on one bet: **doing a task once tells you nothing about doing it a
-hundred times.**
+Banks run old screens with no API. Handrail lets an AI model work through a task on those
+screens **once**, with a person watching. That run becomes a small typed file, a **capability**.
+After that the task is replayed from the file with no model at all, in about a second, and other
+AI agents can call it like a function.
 
-A model works out how to do a task in a legacy application, once. That run compiles into a
-typed, versioned, reviewable **capability**. From then on it replays deterministically with no
-model in the loop. When a replay check fails, a ladder is climbed: a closed-set classifier, then
-a bounded model excursion with commits denied, then a person on the same live session. Every
-rung only proposes; the engine verifies before it acts.
+When a replay hits a screen it does not recognise, it climbs a ladder: a cheap classifier, then a
+model on a short leash that cannot commit anything, then a person who takes over the same
+browser. Each rung only suggests. The engine checks before acting.
 
 ```
-goal ──▶ author (model, once) ──▶ trace ──▶ compile ──▶ capability ──▶ verify ──▶ approve
-                                                                          │
-inputs ───────────────────────────────────────────────────▶ replay (no model) ──▶ result
-                                                              │ on a failed check
-                                                              ▼
-                                                   classifier → bridge → human
+goal ──▶ author (model, once) ──▶ compile ──▶ capability ──▶ verify ──▶ approve
+                                                                 │
+inputs ───────────────────────────────────▶ replay (no model) ──▶ result
+                                                   │ when a check fails
+                                                   ▼
+                                       classifier → model on a leash → person
 ```
 
-The target is **PLUMBLINE**, a mock core-banking app in `targetapp/` built to be hostile the way
-real ones are: framesets, no ids, no labels, table layout, per-render form tokens, terse
-mainframe messages, two tenants with different markup, faults armed on demand.
+The target is **PLUMBLINE**, a fake core-banking app in `targetapp/` built to be awkward the way
+real ones are: framesets, no ids, no labels, table layout, form tokens that change every page,
+two tenants with different markup, and faults you can switch on.
 
-- [REPORT.md](REPORT.md) — the design write-up (the seven headings the brief asks for).
-- [evidence/examples/](evidence/examples/) — the real discovery run and six replays, with logs.
-- [docs/DESIGN.md](docs/DESIGN.md), [docs/PLAN.md](docs/PLAN.md), [docs/HANDOFF.md](docs/HANDOFF.md)
-  — the architecture, the build order, and where things stand.
-- [docs/HANDRAIL-GUIDE.pdf](docs/HANDRAIL-GUIDE.pdf) — the user guide with screenshots: install, tests,
-  every command, the console, recording a run, troubleshooting.
-- [Handrail in Five Pictures](https://billdhawal.github.io/handrail/five-pictures.html) and
-  [Handrail, as built](https://billdhawal.github.io/handrail/as-built.html) — illustrated,
-  animated walkthroughs.
+**Where to look**
+
+- [REPORT.md](REPORT.md): the design write-up, seven sections.
+- [docs/HANDRAIL-GUIDE.pdf](docs/HANDRAIL-GUIDE.pdf): user guide with screenshots of every command,
+  including how to write a new capability.
+- [evidence/examples/](evidence/examples/): the real discovery run and seven replays, with logs.
+- [docs/DESIGN.md](docs/DESIGN.md), [docs/PLAN.md](docs/PLAN.md), [docs/HANDOFF.md](docs/HANDOFF.md):
+  the reasoning, the build order, and where things stand.
+- https://billdhawal.github.io/handrail/: two illustrated walkthroughs.
 
 ## Setup
 
-Python 3.12 and [uv](https://docs.astral.sh/uv/). Everything beyond the core is an opt-in extra.
+You need Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync --extra browser --extra author --extra classify --extra serve
 uv run playwright install chromium
-cp .env.example .env            # then put your key in it
+cp .env.example .env            # put ANTHROPIC_API_KEY in it
 ```
 
-`.env` holds `ANTHROPIC_API_KEY`. It is needed by **authoring**, the **Claude referee** and the
-**scout**. Replay needs no key at all. `TYPESAFE_API_KEY` is optional (the Jev referee). The
-Laya referee runs on-device and needs no key; its checkpoint downloads on first use.
+The key is only used for **discovery**, the Claude classifier, and the model on a leash.
+**Replay needs no key.** `TYPESAFE_API_KEY` is optional. The Laya classifier runs on your
+machine with no key; it downloads once on first use.
 
-### Running without live services
+### Run without any live service
 
 ```bash
-make test        # ruff, ruff format --check, mypy strict, pytest: 332 tests, about 15 seconds
+make test        # lint, types, 339 tests, about 18 seconds
 ```
 
-The suite needs no key and no server: the engine runs on a scripted surface, seventeen tests
-drive a real headless Chromium against PLUMBLINE started inside the test, and the authoring
-loop runs with a scripted fake model. Replay against the mock bank needs only `make up`.
+No key, no server. Most tests use a scripted fake surface. Seventeen drive a real headless
+Chromium against PLUMBLINE started inside the test. The discovery loop runs against a scripted
+fake model.
 
 ## Demo path
 
-Start the mock bank (two tenants, ports 8081 and 8082):
+Start the fake bank:
 
 ```bash
 make up
 export BASE_URL=http://127.0.0.1:8081
 ```
 
-**1. Discover once.** The model drives the bank through a numbered menu of legal operations
-and never sees a selector. Every button press asks you at the terminal whether it is a commit.
+**1. Discover once.** The model drives the bank through a numbered menu of legal moves. It never
+sees a selector. Each button press asks you at the terminal whether it is a commit.
 
 ```bash
 uv run handrail author \
@@ -77,10 +77,10 @@ uv run handrail author \
   --input member_number=400118 --input share_id=400118-S0001 --input reason=LEGAL --by "$USER"
 ```
 
-Add `--confirm commit` to answer every prompt up front. The compiled card is a draft.
+Add `--confirm commit` to answer every prompt up front. The card comes out as a draft.
 
-**2. Replay, no model.** Inputs in, typed result out. Exit code 0 success, 2 business outcome,
-3 recoverable, 4 hard failure.
+**2. Replay with no model.** Inputs in, typed result out. Exit code 0 success, 2 business
+outcome, 3 recoverable, 4 hard failure.
 
 ```bash
 uv run handrail replay capabilities/plumbline-place-hold.authored.json \
@@ -88,7 +88,7 @@ uv run handrail replay capabilities/plumbline-place-hold.authored.json \
   --input member_number=400118 --input share_id=400118-S0005 --input reason=LEGAL
 ```
 
-A share that is already on hold is an answer, not a failure (the hand-written card declares it):
+A share that is already on hold is an answer, not a failure:
 
 ```bash
 uv run handrail replay capabilities/plumbline-place-hold.json \
@@ -97,7 +97,7 @@ uv run handrail replay capabilities/plumbline-place-hold.json \
 # BUSINESS_OUTCOME  code=ALREADY_PROCESSED  outcome=already_held
 ```
 
-**3. Verify and approve.** Three clean replays for three members, each confirmed against the
+**3. Verify and approve.** Three clean replays for three members, each checked against the
 record store, then a named person signs.
 
 ```bash
@@ -110,7 +110,7 @@ uv run handrail approve capabilities/plumbline-place-hold.authored.json --by "$U
 ```
 
 **4. Escalation.** Change the bank under the card and watch the ladder. A reworded result line
-is placed by the referee; a rewritten result page goes to you at the console.
+is placed by the classifier. A rewritten result page comes to you at the console.
 
 ```bash
 curl -s -X POST http://127.0.0.1:8081/__test__/reset
@@ -119,7 +119,7 @@ curl -s -X POST -H 'Content-Type: application/json' \
 uv run handrail replay capabilities/plumbline-place-hold.authored.json --classifier claude \
   --episodes episodes.db --input operator_id=dcolewell --input password=plumbline-demo \
   --input member_number=400337 --input share_id=400337-S0001 --input reason=LEGAL
-uv run handrail episodes episodes.db        # the referee's calibration table
+uv run handrail episodes episodes.db        # how well the classifier has done so far
 
 curl -s -X POST http://127.0.0.1:8081/__test__/reset
 curl -s -X POST -H 'Content-Type: application/json' \
@@ -127,13 +127,13 @@ curl -s -X POST -H 'Content-Type: application/json' \
 uv run handrail replay capabilities/plumbline-place-hold.authored.json --classifier claude \
   --console 8765 --headed --input operator_id=dcolewell --input password=plumbline-demo \
   --input member_number=400445 --input share_id=400445-S0001 --input reason=LEGAL
-# open http://127.0.0.1:8765/ : take over, fix things in the headed browser, hand back
+# open http://127.0.0.1:8765/ : take over, fix things in the browser, hand back
 ```
 
-Add `--bridge anthropic:claude-sonnet-5` for rung two, the scout. Use `--classifier laya` for
-the on-device referee. Other faults: `slow`, `dialog`, `maintenance`, `error`, `drift_minor`.
+Add `--bridge anthropic:claude-sonnet-5` for the model on a leash. Use `--classifier laya` for
+the on-device classifier. Other faults: `slow`, `dialog`, `maintenance`, `error`, `drift_minor`.
 
-**5. An agent orders.** One typed MCP tool per approved card; the agent never sees a screen or
+**5. An agent calls it.** One typed MCP tool per approved card. The agent never sees a screen or
 a password.
 
 ```bash
@@ -147,13 +147,13 @@ HANDRAIL_SECRET_PASSWORD=plumbline-demo uv run python examples/agent_caller.py \
 
 ```
 src/handrail/
-  schema/     the artifact and the result contract            surface/   six verbs; browser/ is Playwright
-  replay/     engine, journal, screens, rungs/ (the ladder)    kernel/    evidence, signatures, episodes, the baton
-  author/     the model's three-line card, the guard, the scout, the recorder
-  compile/    trace to card; the verify gate; approve          escalate/  the questions, the ports, three referees
-  serve/      the console and the MCP server                   cli.py     replay, observe, author, verify, episodes, approve, serve
-capabilities/ two cards for PLUMBLINE            targetapp/  PLUMBLINE          tests/  332, invariants first
+  schema/     the capability file and the result          surface/   six verbs; browser/ is Playwright
+  replay/     engine, journal, screens, rungs/ (ladder)    kernel/    evidence, signatures, episodes, baton
+  author/     the model's tools, the guard, the leash, the recorder
+  compile/    trace to card; verify gate; approve          escalate/  questions, ports, three classifiers
+  serve/      the console and the MCP server               cli.py     replay, observe, author, verify, episodes, approve, serve
+capabilities/ three cards for PLUMBLINE       targetapp/  PLUMBLINE       tests/  339
 ```
 
-Rules that do not bend are in [CLAUDE.md](CLAUDE.md). Milestone 4 (a 3270 terminal surface) and
-8 (macOS accessibility) are designed and not built; see REPORT.md, section 7.
+Rules that do not bend are in [CLAUDE.md](CLAUDE.md). The terminal surface and macOS
+accessibility surface are designed and not built; see REPORT.md, section 7.

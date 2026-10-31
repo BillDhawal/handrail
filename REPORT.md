@@ -1,162 +1,187 @@
 # Handrail — design write-up
 
-Handrail turns one model-driven run through a legacy application into a typed, versioned,
-reviewable **capability**, then replays it with no model in the loop. When a replay check fails it
-climbs a ladder: a closed-set classifier, then a bounded model excursion with commits denied, then
-a person on the same live session. Every rung only proposes; the engine verifies before acting.
-The target is PLUMBLINE, a mock core-banking app I built to be hostile the way real ones are:
-framesets, no ids, no labels, table layout, per-render form tokens, terse mainframe messages, two
-tenants with different markup, and faults armed on demand. Everything below was run live; the
-runs are in `/evidence/examples/`.
+**What it does, in one paragraph.** A bank has old screens with no API. Handrail lets an AI
+model work through a task on those screens once, while a person watches. That one run is turned
+into a small, typed file called a **capability**. From then on the task is replayed from the
+file, with no model involved, in about a second. When a replay hits a screen it does not
+recognise, it climbs a ladder: first a cheap classifier, then a model on a short leash that may
+not commit anything, then a person who takes over the same browser. Each rung only suggests; the
+engine checks the suggestion before acting on it.
 
-Where to look: the code is at https://github.com/BillDhawal/handrail; a user guide with
-screenshots of every command is at [docs/HANDRAIL-GUIDE.pdf](docs/HANDRAIL-GUIDE.pdf); two
-illustrated walkthroughs are at https://billdhawal.github.io/handrail/ (the five analogies the
-code is written in, and the architecture and workflows as built, with live run data).
+The target is PLUMBLINE, a fake core-banking app I built to be as awkward as the real ones:
+framesets, no ids, no labels, table layouts, form tokens that change every page, terse mainframe
+messages, two tenants with different markup, and faults I can switch on. Everything in this
+write-up was run for real; the runs are in `/evidence/examples/`.
+
+Where to look: the code is at https://github.com/BillDhawal/handrail. A user guide with
+screenshots of every command is at [docs/HANDRAIL-GUIDE.pdf](docs/HANDRAIL-GUIDE.pdf). Two
+illustrated walkthroughs are at https://billdhawal.github.io/handrail/.
 
 ## 1. Architecture
 
-Three layers, one rule between them. **Schema** (`schema/`) is the artifact and the result
-contract. **Replay** (`replay/`, `kernel/`) is the deterministic core: the engine, the journal,
-the evidence recorder, screen signatures, the ladder's rungs. **Surface** (`surface/`) is the only
-code that touches an application, behind six verbs: `open`, `observe`, `resolve`, `act`,
-`evaluate`, `evidence`. The rule, enforced by `tests/invariants/test_no_model_in_the_core.py`,
-which reads every import: none of those packages can reach a model client. Model-backed code
-lives only in `author/` and `escalate/backends/` and is injected by the CLI.
+Think of a restaurant. The **schema** (`schema/`) is the recipe card and the receipt. The
+**replay engine** (`replay/`, `kernel/`) is the kitchen: it cooks from the card and never talks
+to a model. The **surface** (`surface/`) is the waiter, the only code that touches the
+application, through six verbs: `open`, `observe`, `resolve`, `act`, `evaluate`, `evidence`. The
+**author** package is the one evening a chef is in the kitchen, and the **escalate** package
+holds the referees the engine may ask when it is lost.
 
-The central idea borrowed from the Jev projects is the **numbered operations table**. `observe`
-does not hand a model a page and say "point at anything". It returns a menu of legal operations
-on controls that are actually present: `7: invoke button 'F5=Sign On'`. A disabled button is not
-on it; a checkbox is never offered as a place to type. Every model in the system can only say a
-row number, so no model output ever becomes a selector, a coordinate or code. The same menu
-serves authoring, the bridge, and the classifier's `which_control` question.
+One rule holds it together: nothing in `schema`, `replay`, `surface`, `kernel` or `compile` can
+import a model client. A test reads every import and fails if one appears. Models live only in
+`author/` and `escalate/backends/`, and the command line hands them in.
 
-Key trade-offs. The engine, journal, schema and surfaces are hand-written with no framework,
-because this is the product and the thing an auditor asks about. The authoring loop is LangChain
-`create_agent`, because a closed tool list and tool-call interception are commodity. Single
-process, no queue: a run is one browser and one engine. The three-rung ladder is cheap before
-expensive: a classifier call costs a fraction of a cent, a model excursion costs a few cents, a
-person costs minutes.
+The idea everything rests on is the **numbered menu**. When the model looks at a page, it is not
+shown raw HTML and told "click anywhere". It gets a list of legal moves on controls that really
+exist: `7: invoke button 'F5=Sign On'`. A disabled button is not on the list. A checkbox is never
+offered as a place to type. The model answers with a row number, so nothing a model says ever
+becomes a selector, a coordinate, or code. The same menu is used for discovery, for the model on
+a leash, and for the classifier's questions.
+
+Trade-offs. The engine, journal, schema and surfaces are hand-written with no framework, because
+that is the product and the part an auditor will ask about. The discovery loop uses LangChain's
+`create_agent`, because a fixed list of tools and a hook on each tool call are commodity. One
+process, no queue: one run is one browser and one engine. The ladder is ordered cheap to
+expensive: a classifier call costs a fraction of a cent, a model excursion a few cents, a person
+costs minutes.
 
 ## 2. Artifact schema
 
-`schema/capability.py`, a Pydantic model with seventeen validators, each a sentence the engine
-relies on. The shape: `inputs` (typed, with patterns and enums, and a `sensitivity` so a password
-is masked everywhere), `outputs` (each tied to a `read` step with an extraction pattern and the
-outcomes it is produced on), `screens` (a structural signature and the paths it was taken over,
-never a text literal), `targets` (a named repository, so two steps on one control share one
-definition), `steps`, `outcomes`, `safety`, `lifecycle`.
+The capability is a Pydantic model in `schema/capability.py` with seventeen checks. Each check is
+one sentence the engine relies on, such as "every step names a screen that exists". The parts:
 
-A **target** is described the way assistive technology describes it: role, accessible name, the
-verbs it supports, a scope (frame, then table row), and a cost-ranked **ladder** of ways to find
-it again. Rungs are tried cheapest first and never raced, and the rung that resolved is reported
-on every run, so a capability that starts landing on rung two is the early warning that the
-application moved. A **fingerprint** over role, name, verbs and ancestor roles answers "is this the
-same control", which a ladder alone cannot. Two corrections from the prototype are baked in: a
-submit button's `value` is its label, and a `read` step's own text is not drift.
+- **inputs**: typed, with patterns and allowed values. A `sensitivity: secret` flag means the
+  value is masked everywhere it could appear.
+- **outputs**: each is tied to a `read` step, with an optional pattern to pull out the value, and
+  the outcomes it is produced on.
+- **screens**: recognised by their structure, never by their text. Each stores a hash and the set
+  of element paths it was computed from.
+- **targets**: one named entry per control, so two steps on the same button share one definition.
+- **steps**, **outcomes**, **safety**, **lifecycle**.
 
-Every **step** carries a screen precondition and an **effect class**: `read`, `navigate`, `stage`
-(a reversible draft) or `commit` (not freely reversible). Effects are declared, never inferred;
-the prototype's keyword guesser marked "submit the sign-on form" dangerous and would have let
-"freeze the account" through. A commit must be confirmed by a named person before the card can
-leave `draft`. Bindings are a closed grammar, `{{input.x}}` and `{{env.X}}`, single pass, residue
-refused at load, allowed in step values and inside targets so one card can say "the Hold link in
-the row for *this* share" and serve every member.
+A **target** is described the way a screen reader would describe it: a role, a name, the verbs it
+supports, a scope (which frame, which table row), and a cost-ordered list of ways to find it
+again, called a ladder. Rungs are tried cheapest first and never in parallel. Every run reports
+which rung found each control, so a capability that starts needing rung two is the early warning
+that the application changed. A **fingerprint** of role, name, verbs and ancestors answers "is
+this the same control?", which a ladder alone cannot.
 
-**Lifecycle**: `draft` → `verified` (three clean replays from a cold start, each confirmed by an
-independent read of the record store, never the screen) → `approved` (a named person's
-signature; nothing in the repository can forge it) → `deprecated`. Only approved cards are served
-to agents.
+Every **step** carries the screen it expects and an **effect class**: `read`, `navigate`, `stage`
+(a draft you can discard) or `commit` (something you cannot freely undo). Effects are declared,
+never guessed. My earlier prototype guessed from keywords; it flagged "submit the sign-on form"
+as dangerous and would have let "freeze the account" through. A commit must be confirmed by a
+named person before the card can leave `draft`. Blanks use a tiny grammar, `{{input.x}}` and
+`{{env.X}}`, and may appear inside a target too, so one card can say "the Hold link in the row
+for *this* share" and serve every member.
+
+**Lifecycle**: `draft`, then `verified` (three clean replays from a cold start, each checked
+against the bank's record store, never the screen), then `approved` (a named person signs; no
+code in the repo can forge the name), then `deprecated`. Only approved cards are offered to
+agents.
 
 ## 3. Determinism & error handling
 
-Replay validates inputs, binds the entry once, and for each step: confirm the screen, resolve the
-control down the ladder, journal `dispatched` if the step mutates, act, settle, journal
-`observed`, check the expected screens. No model is consulted; `classifier_calls` and `llm_calls`
-in the result are both zero on this path, and a hundred replays of the model-authored card ran
-that way, 11 of 11 controls on their first-choice rung every time, mean 747 ms.
+Replay checks the inputs, binds the entry URL once, and for each step: confirm the screen, find
+the control down its ladder, write `dispatched` to the journal if the step changes anything,
+act, wait for the settle condition, write `observed`, check the next screen. No model is asked.
+The result carries two counters, `classifier_calls` and `llm_calls`, and on this path both are
+zero. A hundred replays of the model-written card ran this way, every control on its first-choice
+rung, mean 747 ms.
 
-The **result contract** has four categories. `SUCCESS` with typed outputs. `BUSINESS_OUTCOME`:
-the application said no, an answer, never a failure, with a code such as `ALREADY_PROCESSED` or
-`RECORD_NOT_FOUND`. `RECOVERABLE`: `MISSING_CONTROL`, `SLOW_LOAD`, `UNEXPECTED_DIALOG`,
-`SESSION_EXPIRED`, the only category where `retryable` is true. `HARD_FAILURE`:
-`SCREEN_MISMATCH`, `TARGET_MISMATCH`, `POLICY_VIOLATION`, `UNSAFE_TO_RETRY`. One table decides
-which category every code belongs to, and the result refuses to disagree with it. A failure says
-which step, what was expected and what was seen, and the recorder photographs the screen.
+The **result** has four categories:
 
-**The one invariant.** A commit step journalled `dispatched` and not `observed` is never
-re-executed, on any path: retry, restart, rewind, dialog, or a bridge that claims it reached a
-checkpoint. The journal is append-only and on disk before the surface is touched. The prototype
-double-posted a hold once; the test that makes that impossible is the first one to read.
+| category | meaning | may retry |
+|---|---|---|
+| `SUCCESS` | done, outputs attached | no need |
+| `BUSINESS_OUTCOME` | the bank said no: `ALREADY_PROCESSED`, `RECORD_NOT_FOUND`. An answer, not a failure | no |
+| `RECOVERABLE` | `MISSING_CONTROL`, `SLOW_LOAD`, `UNEXPECTED_DIALOG`, `SESSION_EXPIRED` | yes |
+| `HARD_FAILURE` | `SCREEN_MISMATCH`, `TARGET_MISMATCH`, `POLICY_VIOLATION`, `UNSAFE_TO_RETRY` | no |
 
-**Screens** are recognised by structure, not text: the set of attribute paths of the elements
-(tag, classes, `name` attribute, never a value). Matching is tiered: exact hash; then Jaccard at
-0.85 or above, so a new banner is a moved chair and not a new room; then the ladder. **Settling**
-is a mandatory condition on every step: the next step's control is present, or the named screen
-is showing, polled by the engine while the surface answers only what is true now.
+One table says which category each code belongs to, and the result refuses to disagree with it.
+A failure says which step, what was expected, what was seen, and the recorder takes a screenshot.
+
+**The one rule that never bends.** A commit step journalled `dispatched` but not `observed` is
+never run again, on any path: retry, restart, resume, after a dialog, or because a model claims it
+reached a checkpoint. The journal is written to disk before the browser is touched. My prototype
+once posted a hold twice; the test that makes that impossible is the first one worth reading.
+
+**Screens** are recognised by structure, not words: the set of element paths (tag, classes, name
+attribute, never a value). Matching has three tiers: an exact hash; then a similarity score of
+0.85 or more, so a new banner is a moved chair and not a new room; then the ladder. **Settling**
+is required on every step: the next control is present, or the named screen is showing. The
+engine polls; the surface only ever reports what is true right now.
 
 ## 4. Heterogeneity & multi-tenant
 
-The seam is the surface protocol. Nothing in the engine, the schema or the ladder is DOM-shaped.
-A target's role, name and scope mean the same thing for a DOM button, an `AXButton` and a field
-on a 3270 screen; a terminal reports protected-field positions as its paths and needs nothing
-else from the signature code; its settle condition is "keyboard unlocked", already in the schema.
-The browser surface's walker computes role and name itself rather than trusting the accessibility
-snapshot, because PLUMBLINE's fields have no labels and its messages are plain divs: a nameless
+The seam is the surface protocol. Nothing in the engine, the schema or the ladder knows what a
+DOM is. A target's role, name and scope mean the same thing for a web button, a macOS `AXButton`
+and a field on a 3270 terminal screen. A terminal would report its protected-field positions as
+its paths and needs nothing else from the signature code; its settle condition, "keyboard
+unlocked", is already in the schema. The browser surface works out role and name itself instead
+of trusting the accessibility snapshot, because PLUMBLINE's fields have no labels: a nameless
 field is named from the caption to its left, which is also how the `label` rung finds it again.
-A `native` rung carries a CSS selector that only that surface can follow, at the highest cost.
 
 Multi-tenant reuse is designed, not built. PLUMBLINE's two tenants differ in frame names, field
-names, button labels and headers. The artifact is already data, not code, so the plan is a base
-capability per vendor product plus a per-tenant **overlay** that overrides target ladders and
-screen signatures by name and nothing else; the compiler's existing refusals apply to the merged
-result. Drift is measured on every run from data already in the result: the rung that resolved,
-the signature tier, and every ladder climb as a row in `episodes.db`. A tenant whose runs start
-landing on rung two gets a re-verification, not a re-recording.
+names, button labels and headers. Because the capability is data, not code, the plan is one base
+card per vendor product plus a small per-tenant **overlay** that overrides target ladders and
+screen signatures by name and nothing else. Drift is measured on every run from data already in
+the result: which rung found each control, which tier matched each screen, and every ladder
+climb as a row in `episodes.db`. A tenant whose runs start landing on rung two gets re-verified,
+not re-recorded.
 
 ## 5. Escalation & handoff
 
-"Stuck" is a failed deterministic check that the ladder cannot resolve. Rung one asks a
-**classifier** a closed question, `which_screen` among the screens the step expects plus
-`none_of_these`, and accepts an answer only above a threshold with a margin *and* when the chosen
-screen's stored furniture overlaps the page at 0.5. Screen text is untrusted; furniture cannot be
-talked into anything. Three backends behind one port: Claude with the answer sheet enforced, Laya
-on-device so nothing leaves the machine (verified: it abstained honestly at 0.46 on a reworded
-line), and TypeSafe's Jev, written but not run. Rung two sends a **scout**: the authoring agent on
-the same three-line card with `commit` struck off and a four-turn leash, which must end by naming
-an expected screen the engine then checks the same way. A scout naming a screen behind the run is
-ignored: a bridge goes forward or not at all.
+"Stuck" means a deterministic check failed and the ladder could not fix it.
 
-Rung three is the **baton** (`kernel/control.py`): one token, `AUTOMATION_RUNNING`, `PAUSED`,
-`HUMAN_CONTROL`, `ABORTED`, exchanged only by name and reason. The engine pauses, records the
-screen, and the **console** (`serve/console.py`, a few dozen lines over localhost) shows the
-expected screens and three buttons: take over, hand back naming a screen, abort. The person
-drives the same headed browser the run was using. On hand-back the engine records who and when,
-photographs the screen again, and continues; the result says `escalated_to_human`. A person's
-word is final only where the machine cannot tell: a hand-back naming a screen the page visibly
-contradicts is a mismatch, not a recovery, and that was tested live.
+**Rung one** asks a classifier a closed question: "which of these screens is this?", with the
+screens the step expects plus `none_of_these`. An answer is accepted only above a confidence
+threshold with a margin, *and* only if the chosen screen's stored structure overlaps the page by
+at least half. Screen text is untrusted; structure cannot be talked into anything. Three
+classifiers sit behind one interface: Claude with a forced answer sheet, Laya running on the
+machine so nothing leaves it (tested: it said "not sure" at 0.46 on a reworded line, which is the
+right answer), and TypeSafe's Jev, written but not run.
+
+**Rung two** sends the discovery model back in with `commit` removed from its tools and a
+four-turn limit. It must end by naming an expected screen, which the engine then checks the same
+way. If it names a screen the run already passed, it is ignored: a bridge goes forward or not at
+all.
+
+**Rung three** is the baton, in `kernel/control.py`: one token with four states,
+`AUTOMATION_RUNNING`, `PAUSED`, `HUMAN_CONTROL`, `ABORTED`, passed only by name and reason. The
+engine pauses, saves a screenshot, and a small web page (`serve/console.py`, localhost only)
+shows the expected screens and three buttons: take over, hand back naming a screen, abort. The
+person drives the same browser the run was using. On hand-back the engine records who and when,
+takes another screenshot, and continues; the result says `escalated_to_human`. A person's word is
+final only where the machine cannot tell: a hand-back naming a screen the page clearly
+contradicts is a mismatch, not a recovery. That was tested live.
 
 ## 6. Safety
 
-An **allowlist** of hosts is enforced twice: `open` refuses an entry outside it, and a route
-handler drops every request to any other host. Allowed verbs are a closed list on the card. Risk
-is the declared effect class: a commit pauses for a named person at authoring time, is never
-retried without a probe, and is never re-executed when in doubt. During authoring a button press
-is a commit until the owner says otherwise. **Secrets** are masked at four boundaries, never at
-call sites: inputs marked secret are registered with the recorder and replaced in everything it
-writes; the trace stores blanks, never values; the compiler refuses a typed literal that belongs
-to an input; the MCP tool's schema never shows a secret input and the server fills it from its
-own environment. Limits: masking is by value, so a secret that appears transformed would pass;
-there is no VM per run, only the allowlist; a person's actions during takeover are recorded as
-before-and-after evidence, not as individual clicks.
+An **allowlist** of hosts is enforced twice: opening a URL outside it is refused, and every
+request the browser makes to any other host is dropped. The verbs a card may use are a closed
+list. Risk is the declared effect class: a commit asks a named person at discovery time, is never
+retried without an independent check, and is never run twice when in doubt. During discovery a
+button press is treated as a commit until the owner says otherwise.
+
+**Secrets** are masked at the boundaries, never at call sites: inputs marked secret are given to
+the recorder, which replaces them in everything it writes; the discovery trace stores blanks like
+`{{input.password}}`, never values; the compiler refuses a typed literal that belongs to an
+input; the MCP tool's schema never shows a secret input, and the server fills it from its own
+environment. Limits: masking is by exact value, so a transformed secret would pass; there is no
+sandbox per run, only the allowlist; a person's actions during takeover are recorded as a
+screenshot before and after, not as individual clicks.
 
 ## 7. Cuts
 
-Cut: the terminal surface (no 3270 host to run against), the macOS accessibility surface, the
-tenant overlay, the control rung (`which_control` is on the card but not wired into resolve),
-recording a person's clicks during takeover, a VM per run, and Jev live (no key). The authored
-card has one outcome because authoring saw one path; the hand-written card declares `already_held`
-and `no_match` as business outcomes and is the one served to the example agent. Next, in order:
-the tenant overlay against PLUMBLINE's second tenant, the control rung, a TN3270 mock so the
-terminal surface can be built the way the browser one was, then the input-event tap on macOS that
-flips the baton when a human touches the keyboard.
+Left out, on purpose: the terminal surface (no 3270 host to test against), the macOS
+accessibility surface, the tenant overlay, the control rung (the classifier's "which menu row"
+question exists but is not wired into resolve), recording a person's clicks during takeover, a
+sandbox per run, and running Jev live (no key). The model-written place-hold card has one
+outcome because discovery saw one path; the hand-written card also declares `already_held` and
+`no_match`, and is the one the example agent uses. A second model-written card, read a share's
+balance, was authored, verified and approved after submission work began, and exposed two gaps
+that are now fixed: table cells were not on the menu, and the verify gate had one hard-wired
+check.
+
+Next, in order: the tenant overlay against PLUMBLINE's second tenant; the control rung; a small
+TN3270 mock so the terminal surface can be built the way the browser one was; then the macOS
+input tap that pauses the run the moment a human touches the keyboard.
