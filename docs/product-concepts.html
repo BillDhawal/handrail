@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handrail, the product</title>
+<meta name="description" content="Eleven concept screens for Handrail as a governed capability platform, in the order a person meets them.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono&display=swap">
+<style>
+:root{--bg:#F3F5F2;--surface:#FFFFFF;--ink:#15302B;--muted:#56706A;--line:#CBD6D1;--teal:#1F6F63;--brass:#8F6208}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1F1C;--surface:#162C28;--ink:#E6EFEA;--muted:#9DB5AE;--line:#2C4A44;--teal:#5CC2B1;--brass:#E0B04A;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",Verdana,sans-serif;font-size:17px;line-height:1.55}
+.wrap{max-width:62rem;margin:0 auto;padding:56px 20px 72px;display:flex;flex-direction:column;gap:28px}
+h1{font-family:"Bricolage Grotesque","Trebuchet MS",sans-serif;font-size:clamp(2.2rem,6vw,3.4rem);margin:0;line-height:1.05;letter-spacing:-.02em}
+h2{font-family:"Bricolage Grotesque",sans-serif;font-size:1.5rem;margin:24px 0 0}
+p{margin:0;max-width:65ch}.lede{font-size:1.2rem;color:var(--muted)}
+.eyebrow{font-family:"IBM Plex Mono",Menlo,monospace;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--brass)}
+nav a{color:var(--teal)}
+.pitch{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:16px}
+.pitch div{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px}
+.pitch b{font-family:"Bricolage Grotesque",sans-serif;display:block;margin-bottom:6px}
+figure{margin:0}figure img{width:100%;border:1px solid var(--line);border-radius:6px;display:block}
+figcaption{margin-top:10px;max-width:65ch}figcaption b{color:var(--teal)}
+footer{color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav><a href="index.html">Handrail</a> / the product</nav>
+  <span class="eyebrow">Concept, 2026-10-31</span>
+  <h1>Handrail, the product</h1>
+  <p class="lede">A governed capability platform. One screen task on a legacy application is compiled once, approved by a named person, and replayed with zero model calls, and every run leaves evidence that cannot be edited after the fact. These are the eleven screens a person meets, in order. Concept art; labels inside the images are approximate; nothing here is built yet.</p>
+  <div class="pitch">
+    <div><b>Who it is for</b>Teams who run the same task on software with no API, many times a day, and have to prove what happened: insurance agencies on carrier portals first, then banks and credit unions through a partner, then law firms and clinics.</div>
+    <div><b>What is different</b>Competitors meter every run through a model. Handrail never needs a model for the hundredth run, asks a named person before anything irreversible, and hands a stuck run to a person on the same live session.</div>
+    <div><b>How it sells</b>Per approved capability per month plus per replay. A fixed-price first build. Never per step.</div>
+  </div>
+  <h2>The eleven screens</h2>
+  <figure><img src="product-concepts/01-dashboard.jpg" alt="1. Home" loading="lazy"><figcaption><b>1. Home</b> Where you land. Four numbers that matter: approved capabilities, replays today, model calls on replay (always zero), escalations open. A table of capabilities with lifecycle chip, approver, success-rate sparkline and last drift. A right rail for what needs a person now.</figcaption></figure>
+  <figure><img src="product-concepts/02-author.jpg" alt="2. Author" loading="lazy"><figcaption><b>2. Author</b> The one evening the model drives. Left: the goal and a step rail filling with one card per action, each with a screenshot and an effect chip. Right: the live legacy screen, read-only to you, with the control the model is about to use outlined. Bottom: the evidence drawer, chain state, model calls counting up. A big Stop, always visible.</figcaption></figure>
+  <figure><img src="product-concepts/03-commit-marking.jpg" alt="3. Mark the commits" loading="lazy"><figcaption><b>3. Mark the commits</b> Nobody ships this. At the end of authoring every button press is shown and you say which ones cannot be undone. A commit card locks, carries your name, and later needs confirmation to delete.</figcaption></figure>
+  <figure><img src="product-concepts/04-review.jpg" alt="4. Review the capability" loading="lazy"><figcaption><b>4. Review the capability</b> The compiled card, read only. Lifecycle stepper: draft, verified, approved. A version diff in three colours, down to the locator ladder. The three verify runs linked. Typed inputs and outputs. The Approve button signs as you.</figcaption></figure>
+  <figure><img src="product-concepts/11-approval.jpg" alt="5. Approve" loading="lazy"><figcaption><b>5. Approve</b> A checklist, not a form: three clean plates, every commit confirmed by name, no secret literals, the allowlist shown. Your name and the time go into the card. Optionally expose it on the catalog.</figcaption></figure>
+  <figure><img src="product-concepts/05-run-success.jpg" alt="6. A run" loading="lazy"><figcaption><b>6. A run</b> One replay. The status bar carries the four things no competitor can show: model calls at zero, hash chain verified, steps completed of total, and a Retry that knows about commits. Per-step before, action, after. Outputs, masked inputs and the journal on the right. A filmstrip below.</figcaption></figure>
+  <figure><img src="product-concepts/06-run-failed.jpg" alt="7. A failed run" loading="lazy"><figcaption><b>7. A failed run</b> The first line answers the question: application problem, or capability misconfiguration. Then the exact check that failed, quoted. Then the classifier's proposal, labelled as a proposal. The screenshot from the moment it broke.</figcaption></figure>
+  <figure><img src="product-concepts/10-run-history.jpg" alt="8. Run history" loading="lazy"><figcaption><b>8. Run history</b> Every run, with result chips in the four categories, the version on every row, model calls, and who escalated. Filters. Evidence export.</figcaption></figure>
+  <figure><img src="product-concepts/07-takeover.jpg" alt="9. Takeover" loading="lazy"><figcaption><b>9. Takeover</b> The telephone. A brass banner with the engine's instructions and a timer. The ladder on the left shows what was tried. The live screen gets a border that says who is driving. Hand back must name a screen the run was hoping for. Every exchange goes into the journal.</figcaption></figure>
+  <figure><img src="product-concepts/08-drift.jpg" alt="10. Drift" loading="lazy"><figcaption><b>10. Drift</b> Which locator rung found each control on each run, the healing rows with a correct-or-not toggle, and the classifier's calibration table. Drift is raised even when the run succeeded.</figcaption></figure>
+  <figure><img src="product-concepts/09-catalog.jpg" alt="11. Catalog" loading="lazy"><figcaption><b>11. Catalog</b> What other agents see over MCP. Only approved cards. A Read or Write badge from the commit steps, approver and date, success rate, last drift, Try it, Export. A card cannot be listed without a description and a reliability figure.</figcaption></figure>
+  <footer>The research behind this page, with sources, is in the repository under <code>docs/product/</code>. The working system these screens would sit on is described in <a href="as-built.html">Handrail, as built</a>.</footer>
+</div>
+</body>
+</html>
