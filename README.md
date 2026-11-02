@@ -37,7 +37,7 @@ two tenants with different markup, and faults you can switch on.
 You need Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-uv sync --extra browser --extra author --extra classify --extra serve
+uv sync --extra browser --extra author --extra classify --extra serve --extra ui
 uv run playwright install chromium
 cp .env.example .env            # put ANTHROPIC_API_KEY in it
 ```
@@ -49,7 +49,7 @@ machine with no key; it downloads once on first use.
 ### Run without any live service
 
 ```bash
-make test        # lint, types, 339 tests, about 18 seconds
+make test        # lint, types, 380 tests, about 45 seconds (five drive a real headless Chromium)
 ```
 
 No key, no server. Most tests use a scripted fake surface. Seventeen drive a real headless
@@ -143,6 +143,33 @@ HANDRAIL_SECRET_PASSWORD=plumbline-demo uv run python examples/agent_caller.py \
 
 `uv run handrail serve --capabilities capabilities` is the MCP server itself, over stdio.
 
+## See it in a browser
+
+A shop window onto the same shop. `handrail ui` shows the cards, the runs and the drift in a
+page, and lets you start a replay from it. It is not a second engine.
+
+```bash
+uv run handrail ui          # http://127.0.0.1:8090, localhost only
+uv run handrail ui --port 8090 --capabilities capabilities --evidence evidence/runs \
+  --episodes evidence/episodes.db
+```
+
+- **Home**: the numbers that matter (approved cards, replays, model calls on replay, open escalations) and the cards.
+- **Author**: give the model a goal, watch it work, answer the commit prompts with buttons.
+- **Catalog**: every capability and where it stands: draft, verified, approved.
+- **Runs**: every replay, newest first, filterable, with its evidence.
+- **Live**: start a replay, watch the browser, take over when the ladder pauses and hand back.
+- **Drift**: which rung found each control, even on runs that passed.
+- **A card**, reached from Catalog or Home: **Card** (inputs, outputs, steps), **Versions** (what changed) and **Approve** (verify, then sign).
+
+A replay started from Live is the same engine and writes the same evidence as `handrail replay`.
+Model calls on replay stay at zero. The live screen is a stream of screenshots of the headless
+browser, about two a second. Tick "Headed" to get a real window you can drive during a takeover.
+Authoring from the page needs the same model key as `handrail author`.
+
+If port 8081 is taken, run the bank on another port and point `BASE_URL` at it. The cards' allowed
+hosts must match, or the guard will refuse the page.
+
 ## Layout
 
 ```
@@ -151,8 +178,8 @@ src/handrail/
   replay/     engine, journal, screens, rungs/ (ladder)    kernel/    evidence, signatures, episodes, baton
   author/     the model's tools, the guard, the leash, the recorder
   compile/    trace to card; verify gate; approve          escalate/  questions, ports, three classifiers
-  serve/      the console and the MCP server               cli.py     replay, observe, author, verify, episodes, approve, serve
-capabilities/ three cards for PLUMBLINE       targetapp/  PLUMBLINE       tests/  339
+  serve/      console, MCP server, web/ (the UI)                cli.py     replay, observe, author, verify, episodes, approve, serve
+capabilities/ three cards for PLUMBLINE       targetapp/  PLUMBLINE       tests/  380
 ```
 
 Rules that do not bend are in [CLAUDE.md](CLAUDE.md). The terminal surface and macOS

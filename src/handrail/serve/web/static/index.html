@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Handrail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono&display=swap">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="shell">
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="#/"><span class="mark">H</span><span>Handrail</span></a>
+    <a href="#/" data-nav="home"><i>&#9673;</i>Home</a>
+    <a href="#/author" data-nav="author"><i>&#9998;</i>Author</a>
+    <a href="#/catalog" data-nav="catalog"><i>&#9636;</i>Catalog</a>
+    <a href="#/runs" data-nav="runs"><i>&#9654;</i>Runs</a>
+    <a href="#/live" data-nav="live"><i>&#9679;</i>Live</a>
+    <a href="#/drift" data-nav="drift"><i>&#8767;</i>Drift</a>
+  </nav>
+  <main id="view" class="view" aria-live="polite"></main>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

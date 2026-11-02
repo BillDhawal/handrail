@@ -211,9 +211,11 @@ def parser() -> argparse.ArgumentParser:
 
     from .author.run import register as register_authoring
     from .serve.mcp import register as register_serving
+    from .serve.web.app import register as register_ui
 
     register_authoring(sub)
     register_serving(sub)
+    register_ui(sub)
     return p
 
 

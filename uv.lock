@@ -757,10 +757,15 @@ serve = [
 terminal = [
     { name = "py3270" },
 ]
+ui = [
+    { name = "starlette" },
+    { name = "uvicorn" },
+]
 
 [package.dev-dependencies]
 dev = [
     { name = "flask" },
+    { name = "httpx" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -780,13 +785,16 @@ requires-dist = [
     { name = "playwright", marker = "extra == 'browser'", specifier = ">=1.60" },
     { name = "py3270", marker = "extra == 'terminal'", specifier = ">=0.3" },
     { name = "pydantic", specifier = ">=2.7" },
+    { name = "starlette", marker = "extra == 'ui'", specifier = ">=0.40" },
     { name = "typesafe-sdk", marker = "extra == 'classify'", specifier = ">=0.7" },
+    { name = "uvicorn", marker = "extra == 'ui'", specifier = ">=0.30" },
 ]
-provides-extras = ["browser", "terminal", "author", "classify", "serve", "bank"]
+provides-extras = ["browser", "terminal", "author", "classify", "serve", "ui", "bank"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "flask", specifier = ">=3.0" },
+    { name = "httpx", specifier = ">=0.27" },
     { name = "mypy", specifier = ">=1.10" },
     { name = "pytest", specifier = ">=8" },
     { name = "pytest-asyncio", specifier = ">=0.23" },

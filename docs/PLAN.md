@@ -269,6 +269,15 @@ capabilities and reads a receipt, and "already held" is an answer it does not re
 | `serve/mcp.py` | One typed tool per approved card, the card's public inputs as its schema; secrets from `HANDRAIL_SECRET_<NAME>`, never on the schema; the receipt is data |
 | `examples/agent_caller.py` | A `deepagents` agent given exactly the server's tools, told what a receipt means |
 | `cli` | `handrail approve CAP --by NAME`, `handrail serve --capabilities DIR` (MCP over stdio) |
+| `serve/web/app.py` | The front desk: JSON routes under `/api`, the static page for everything else; Starlette |
+| `serve/web/store.py` | The librarian: reads cards, evidence folders and the escalation book, never writes |
+| `serve/web/rollup.py` | The whiteboard tally: the home numbers, drift and open escalations, counted from receipts, no model |
+| `serve/web/live.py` | The stage manager: one replay at a time, screenshots twice a second, take over and hand back |
+| `serve/web/broadcast.py` | The lobby speaker: each recorder line is read out to every listener, none holding up the run |
+| `serve/web/jobs.py` | The back office: approve, retire, verify and author as ticketed jobs with a progress board |
+| `serve/web/authoring.py` | The pass window: `handrail author` with the commit question answered by a button |
+| `serve/web/settings.py` | The house rules: which three shelves the server may open, and the address it listens on |
+| `serve/web/static/` | The front end: plain JS pages (home, author, catalog, card, history, live, run, drift), no build step |
 
 Run: `make test` — 332 passed. Demo, live, 2026-10-08:
 
@@ -292,7 +301,16 @@ What it taught:
   draft after three clean plates. Correct. The owner's name was written in, then it verified.
 - The example must load `.env` itself; the server loads its own.
 
-### 8. macOS accessibility surface (learning)
+### 8. The web UI — done, 2026-11-02
+
+What it proves: the eleven concept screens can be a working local app on real data, and a replay
+started from the page is the same engine, the same evidence, and zero model calls.
+
+Files: the `serve/web/` rows above. Tests: `tests/serve/web/test_app.py`,
+`tests/serve/web/test_store.py`, `tests/serve/web/test_live.py`, `tests/serve/web/test_jobs.py`.
+Branch `web-ui`. Run: `uv run handrail ui`.
+
+### 9. macOS accessibility surface (learning)
 
 Type and save a note in TextEdit with no coordinates. Proves the schema is surface-neutral.
 

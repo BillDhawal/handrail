@@ -1,6 +1,6 @@
 # Handoff — where things stand
 
-**Written:** 2026-10-10, submission-ready after milestone 7 (milestone 4, the terminal, is skipped until a 3270 host is at hand).
+**Written:** 2026-10-10, updated 2026-11-02; submission-ready after milestone 7 (milestone 4, the terminal, is skipped until a 3270 host is at hand).
 **For:** the next Claude session working in this folder, and for Dhawal coming back after a break.
 
 ## What this is, in three sentences
@@ -38,6 +38,15 @@ back-office software (banks and credit unions), not as the take-home it started 
   written under the brief's seven headings, `/evidence/examples/` committed: the real discovery
   run plus seven replays (success, two business outcomes, an injected failure, a drift recovered
   by the referee, a bad input, a human takeover), every log's hash chain verified.
+- 2026-11-02: the eleven concept screens are now a working local app, `handrail ui`, on branch
+  `web-ui` (uncommitted when written). Home, Author, Catalog, Runs, Live, Drift and the card page
+  render real data from `capabilities/` and `evidence/`. Verified live on the mock bank: a
+  read-balance replay started from the Live page finished SUCCESS with `llm_calls = 0` and a
+  balance output; a `drift_major` fault produced a rung-three pause, and Take over then Hand back
+  from the page finished the run SUCCESS with `escalated_to_human = true`. Not done: authoring
+  from the page is built and unit-tested with a scripted model but was not run live against a
+  real model key in this session, so verify it from the page before leaning on it. The live
+  screen is a 0.5 s screenshot stream, not video. One run at a time. No auth; localhost only.
 
 ## Decisions already made — do not reopen
 
@@ -135,7 +144,7 @@ part, then version 0.1's last milestones:
 
 1. **Submit.** Read REPORT.md and README.md as your own words and change what is not. Email the
    repo URL on its own line to assignments@interface.ai from the address you applied with.
-2. **Milestone 8, macOS accessibility** (`surface/macos_ax/`): TextEdit, type and save a note,
+2. **Milestone 9, macOS accessibility** (`surface/macos_ax/`): TextEdit, type and save a note,
    no coordinates. Needs TCC permission on the Mac. The input-event tap that flips the baton
    lives here. A learning milestone, not the product claim.
 3. **Milestone 4, the terminal**: blocked on a 3270 host. Hercules with MVS 3.8j, or a small
