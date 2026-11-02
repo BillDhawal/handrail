@@ -151,8 +151,12 @@ page, and lets you start a replay from it. It is not a second engine.
 ```bash
 uv run handrail ui          # http://127.0.0.1:8090, localhost only
 uv run handrail ui --port 8090 --capabilities capabilities --evidence evidence/runs \
-  --episodes evidence/episodes.db
+  --episodes evidence/episodes.db --index evidence/handrail.db
 ```
+
+The page reads from a small SQLite index (`--index`, default `evidence/handrail.db`) so it stays quick with
+thousands of runs; the cards and evidence folders remain the truth, and the index is rebuilt from them
+whenever it is missing or `POST /api/index/sync` is called.
 
 - **Home**: the numbers that matter (approved cards, replays, model calls on replay, open escalations) and the cards.
 - **Author**: give the model a goal, watch it work, answer the commit prompts with buttons.
@@ -166,6 +170,14 @@ A replay started from Live is the same engine and writes the same evidence as `h
 Model calls on replay stay at zero. The live screen is a stream of screenshots of the headless
 browser, about two a second. Tick "Headed" to get a real window you can drive during a takeover.
 Authoring from the page needs the same model key as `handrail author`.
+
+### Deploy
+
+`docker compose up` gives the UI on 8080 and the API on 8090, with `capabilities/` and `evidence/`
+mounted from the repo. To host the static files elsewhere, set `HANDRAIL_API` (or the
+`handrail-api` meta tag in `index.html`) to the API origin and start the API with
+`--cors <the UI origin>`. The API binds to localhost unless you pass `--host 0.0.0.0`. There is
+no authentication, so put it behind something that has some.
 
 If port 8081 is taken, run the bank on another port and point `BASE_URL` at it. The cards' allowed
 hosts must match, or the guard will refuse the page.

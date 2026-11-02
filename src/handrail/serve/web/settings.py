@@ -8,7 +8,7 @@ named on it, and it listens only on the address written at the bottom.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -19,3 +19,5 @@ class Settings:
     episodes: Path | None
     host: str = "127.0.0.1"
     port: int = 8090
+    index: Path | None = None  # None: an in-memory index, rebuilt each start
+    cors: tuple[str, ...] = field(default_factory=tuple)  # origins allowed to call the API

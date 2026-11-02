@@ -20,6 +20,7 @@ from ...schema.capability import Capability
 from ...schema.effects import EffectClass
 from ...schema.results import RunResult
 from . import rollup
+from .index import Index
 from .rollup import lines, when
 from .settings import Settings
 
@@ -39,8 +40,10 @@ def _writes(cap: Capability) -> bool:
 
 
 class Store:
-    def __init__(self, settings: Settings) -> None:
-        self.settings = settings
+    def __init__(self, settings: Settings, index: Index | None = None) -> None:
+        self.settings, self.index = settings, index
+        if index is not None:
+            index.sync(settings)
 
     # ---- cards -------------------------------------------------------------------------
 
@@ -62,7 +65,30 @@ class Store:
         except (ValidationError, ValueError) as e:
             raise NotFound(f"{file} is not a valid capability card") from e
 
+    def _indexed_capabilities(self, index: Index) -> list[dict[str, Any]]:
+        """The drawer has the facts; the card is read only for inputs and outputs."""
+        out = []
+        for row in index.capabilities():
+            try:
+                cap = self._card(row["file"])
+            except NotFound:
+                continue
+            rel = row["reliability"]
+            out.append(
+                row
+                | {
+                    "description": row["title"],
+                    "inputs": [i.model_dump(mode="json") for i in cap.inputs],
+                    "outputs": [o.model_dump(mode="json") for o in cap.outputs],
+                    "last_run": index.last_run(row["id"]),
+                    "success_rate": rel["clean"] / rel["replays"] if rel["replays"] else None,
+                }
+            )
+        return out
+
     def capabilities(self) -> list[dict[str, Any]]:
+        if self.index is not None:
+            return self._indexed_capabilities(self.index)
         runs = self.results()
         out = []
         for file, cap in self.cards():
@@ -145,38 +171,24 @@ class Store:
         return out
 
     def _dir(self, run_id: str) -> Path:
-        """A run is found by the id inside its result, or failing that by its folder name."""
+        """A run is found by the drawer, or the id inside its result, or its folder name."""
         _plain(run_id)
-        for d, r in self.results():
-            if r.run_id == run_id:
-                return d
+        found = self.index.dir_of(run_id) if self.index is not None else None
+        if found is not None and (found / "result.json").is_file():
+            return found
+        if self.index is None:
+            for d, r in self.results():
+                if r.run_id == run_id:
+                    return d
         d = self.settings.evidence / run_id
         if (d / "result.json").is_file():
             return d
         raise NotFound(f"no run named {run_id}")
 
     def runs(self, limit: int = 100) -> list[dict[str, Any]]:
-        out = []
-        for _, r in self.results()[: max(limit, 0)]:
-            out.append(
-                {
-                    "run_id": r.run_id,
-                    "capability_id": r.capability_id,
-                    "capability_version": r.capability_version,
-                    "started_at": r.started_at,
-                    "duration_ms": r.duration_ms,
-                    "category": r.category.value,
-                    "code": r.code.value,
-                    "outcome": r.outcome,
-                    "classifier_calls": r.classifier_calls,
-                    "llm_calls": r.llm_calls,
-                    "escalated_to_human": r.escalated_to_human,
-                    "steps_ok": sum(s.status in ("ok", "already_done") for s in r.steps),
-                    "steps_total": len(r.steps),
-                    "drift": r.drift.model_dump(mode="json"),
-                }
-            )
-        return out
+        if self.index is not None:
+            return self.index.runs(limit)
+        return [rollup.run_row(r) for _, r in self.results()[: max(limit, 0)]]
 
     def run(self, run_id: str) -> dict[str, Any]:
         d = self._dir(run_id)

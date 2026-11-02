@@ -61,3 +61,13 @@ def test_a_bad_name_is_a_400_with_an_error_body(client: TestClient) -> None:
 def test_the_root_serves_a_page(client: TestClient) -> None:
     r = client.get("/")
     assert r.status_code == 200 and "<title>" in r.text
+
+
+def test_the_index_answers_and_a_sync_on_demand_refills_it(tmp_path: Path) -> None:
+    s = Settings(ROOT / "capabilities", ROOT / "evidence/examples", None, index=tmp_path / "i.db")
+    c = TestClient(build_app(s))
+    first = c.get("/api/index").json()
+    assert first["runs"] == len(c.get("/api/runs").json()) > 0
+    assert first["capabilities"] > 0 and first["path"].endswith("i.db") and first["synced_at"]
+    again = c.post("/api/index/sync").json()
+    assert again["runs"] == first["runs"] and again["synced_at"] >= first["synced_at"]

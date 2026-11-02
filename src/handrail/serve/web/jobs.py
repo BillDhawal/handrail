@@ -27,6 +27,7 @@ from ...kernel.evidence import Recorder, new_run_id
 from ...schema.capability import Capability
 from ...surface.base import Surface
 from .authoring import Authoring, Busy, Kit, NoModel, browser_kit
+from .index import Index
 from .settings import Settings
 from .store import NotFound, _plain
 
@@ -51,8 +52,9 @@ class Jobs:
         kit: Kit = browser_kit,
         model: Any = None,
         dotenv: Path = Path(".env"),
+        index: Index | None = None,
     ) -> None:
-        self.settings, self.publish = settings, publish
+        self.settings, self.publish, self.index = settings, publish, index
         self.surface_for, self.checks = surface_for, checks
         self.authoring = Authoring(settings, self._publish_author, kit, model, dotenv)
         self.states: dict[str, dict[str, Any]] = {}
@@ -70,6 +72,9 @@ class Jobs:
         job = self.states.setdefault(job_id, {"job_id": job_id, "lines": []})
         job["state"] = message["state"]
         job["lines"].append(message["line"])
+        done = self.authoring.compiled
+        if self.index is not None and message["state"] == "done" and done:
+            self.index.upsert_capability(self.settings.capabilities / done)
         self.publish(message)
 
     # ---- the desk ----------------------------------------------------------------------
@@ -86,6 +91,8 @@ class Jobs:
     def _save(self, file: str, card: Capability) -> dict[str, Any]:
         text = card.model_dump_json(indent=2, exclude_none=True) + "\n"
         self._path(file).write_text(text)
+        if self.index is not None:
+            self.index.upsert_capability(self._path(file))
         return card.model_dump(mode="json", exclude_none=True)
 
     def approve(self, file: str, by: str) -> dict[str, Any]:

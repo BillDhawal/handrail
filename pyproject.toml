@@ -14,7 +14,7 @@ classify = ["typesafe-sdk>=0.7", "laya>=0.4"]
 # The MCP server, and the example agent that calls it.
 serve = ["mcp>=1.0", "langchain-mcp-adapters>=0.3", "deepagents>=0.7"]
 # The local web UI: a small ASGI server for the capability cards, runs and drift.
-ui = ["starlette>=0.40", "uvicorn>=0.30"]
+ui = ["starlette>=0.40", "uvicorn>=0.30", "websockets>=13"]
 # PLUMBLINE, the deliberately hostile mock core-banking app we test against.
 bank = ["flask>=3.0"]
 

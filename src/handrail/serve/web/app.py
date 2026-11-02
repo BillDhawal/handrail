@@ -29,6 +29,8 @@ from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from .broadcast import Broadcast
+from .cors import cors_middleware, cors_origins
+from .index import Index
 from .jobs import Jobs, job_routes
 from .live import Busy, LiveRun
 from .live import _surface as default_surface
@@ -100,6 +102,23 @@ def read_routes(store: Store) -> list[BaseRoute]:
     ]
 
 
+def index_routes(store: Store) -> list[BaseRoute]:
+    def info() -> dict[str, Any]:
+        index = store.index
+        assert index is not None
+        return {**index.counts(), "path": index.path, "synced_at": index.synced_at}
+
+    def resync(request: Request) -> dict[str, Any]:
+        assert store.index is not None
+        store.index.sync(store.settings)
+        return info()
+
+    return [
+        Route("/api/index", _answer(lambda r: info())),
+        Route("/api/index/sync", _answer(resync), methods=["POST"]),
+    ]
+
+
 def live_routes(live: LiveRun) -> list[BaseRoute]:
     async def body(request: Request) -> dict[str, Any]:
         try:
@@ -164,22 +183,34 @@ def build_app(settings: Settings, surface_factory: Any = None) -> Starlette:
         (STATIC / "index.html").write_text(
             "<!doctype html><title>Handrail</title><h1>Handrail</h1>"
         )
-    store = Store(settings)
-    routes: list[BaseRoute] = read_routes(store)
+    index = Index(settings.index or ":memory:")
+    store = Store(settings, index)  # syncs the drawer from the shelves on the way in
+    routes: list[BaseRoute] = read_routes(store) + index_routes(store)
     broadcast = Broadcast()
-    live = LiveRun(settings, broadcast, surface_factory or default_surface)
+    live = LiveRun(settings, broadcast, surface_factory or default_surface, index=index)
     routes += live_routes(live)
-    routes += job_routes(Jobs(settings, broadcast.publish))
+    routes += job_routes(Jobs(settings, broadcast.publish, index=index))
     routes += [Route("/api/{rest:path}", _no_such_api)]
     routes += [Mount("/", app=StaticFiles(directory=STATIC, html=True), name="static")]
-    return Starlette(routes=routes, middleware=[Middleware(NoStore)])
+    middleware = [Middleware(NoStore)]
+    if settings.cors:
+        middleware.append(cors_middleware(list(settings.cors)))
+    return Starlette(routes=routes, middleware=middleware)
 
 
 async def ui_command(args: argparse.Namespace) -> int:
     import uvicorn
 
     episodes = Path(args.episodes) if args.episodes else None
-    settings = Settings(Path(args.capabilities), Path(args.evidence), episodes, port=args.port)
+    settings = Settings(
+        Path(args.capabilities),
+        Path(args.evidence),
+        episodes,
+        host=args.host,
+        port=args.port,
+        index=Path(args.index) if args.index else None,
+        cors=tuple(cors_origins(args)),
+    )
     server = uvicorn.Server(
         uvicorn.Config(build_app(settings), host=settings.host, port=settings.port)
     )
@@ -190,8 +221,13 @@ async def ui_command(args: argparse.Namespace) -> int:
 
 def register(sub: Any) -> None:
     u = sub.add_parser("ui", help="serve the web UI on localhost")
+    u.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to serve beyond this machine")
     u.add_argument("--port", type=int, default=8090)
+    u.add_argument(
+        "--cors", action="append", default=[], metavar="ORIGIN", help="an allowed origin"
+    )
     u.add_argument("--capabilities", default="capabilities")
     u.add_argument("--evidence", default="evidence/runs")
     u.add_argument("--episodes", default="evidence/episodes.db")
+    u.add_argument("--index", default="evidence/handrail.db")
     u.set_defaults(run=ui_command)

@@ -1,0 +1,20 @@
+# docker compose up  ->  UI on :8080 (nginx, proxies /api and /ws), API on :8090.
+#
+# Alternative, no proxy: host the static files anywhere, set
+#   <meta name="handrail-api" content="http://localhost:8090">   (or window.HANDRAIL_API)
+# and start the API with:  handrail ui --cors http://localhost:8080
+services:
+  api:
+    build: .
+    ports: ["8090:8090"]
+    volumes:
+      - ./capabilities:/data/capabilities
+      - ./evidence:/data/evidence
+
+  web:
+    image: nginx:alpine
+    ports: ["8080:8080"]
+    depends_on: [api]
+    volumes:
+      - ./src/handrail/serve/web/static:/usr/share/nginx/html:ro
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro

@@ -1,0 +1,6 @@
+.venv
+evidence/runs
+.git
+scratchpad
+*.pdf
+docs/product

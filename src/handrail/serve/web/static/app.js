@@ -1,5 +1,6 @@
 // The front desk: a hash router, a fetch helper, a socket that keeps redialling.
 // Pages are small modules under pages/; each default-exports render(root, ctx).
+import { API_BASE, WS_URL } from './config.js';
 
 const ENT = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 export const escape = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ENT[c]);
@@ -46,15 +47,18 @@ export const fmt = {
   clock(secs) { return `${pad(Math.floor(secs / 60))}:${pad(Math.floor(secs % 60))}`; },
 };
 
+// One door for every API address, so a split deploy changes one place.
+export const apiUrl = (path) => `${API_BASE}${path}`;
+
 // ---- backend: real by default, swapped for fixtures with ?demo ----
 async function realApi(path, opts = {}) {
-  const init = { method: opts.method || 'GET', headers: {} };
+  const init = { method: opts.method || 'GET', headers: {}, credentials: 'omit' };
   if (opts.body !== undefined) {
     init.method = opts.method || 'POST';
     init.headers['Content-Type'] = 'application/json';
     init.body = JSON.stringify(opts.body);
   }
-  const res = await fetch(path, init);
+  const res = await fetch(apiUrl(path), init);
   let data = null;
   try { data = await res.json(); } catch { /* empty body */ }
   if (!res.ok || (data && data.error && !Array.isArray(data))) {
@@ -66,8 +70,7 @@ async function realApi(path, opts = {}) {
 function realWs(onMessage) {
   let sock, stopped = false, wait = 500, timer;
   const open = () => {
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    sock = new WebSocket(`${proto}://${location.host}/ws`);
+    sock = new WebSocket(WS_URL);
     sock.onopen = () => { wait = 500; };
     sock.onmessage = (e) => { try { onMessage(JSON.parse(e.data)); } catch { /* ignore */ } };
     sock.onclose = () => {
@@ -80,7 +83,7 @@ function realWs(onMessage) {
   return () => { stopped = true; clearTimeout(timer); sock && sock.close(); };
 }
 
-const backend = { api: realApi, ws: realWs, fileUrl: (run, name) => `/api/runs/${run}/files/${name}` };
+const backend = { api: realApi, ws: realWs, fileUrl: (run, name) => apiUrl(`/api/runs/${run}/files/${name}`) };
 export const api = (path, opts) => backend.api(path, opts);
 export const ws = (onMessage) => backend.ws(onMessage);
 export const fileUrl = (run, name) => backend.fileUrl(run, name);

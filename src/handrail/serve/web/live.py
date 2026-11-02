@@ -26,6 +26,7 @@ from ...replay.engine import ReplayEngine
 from ...replay.journal import Journal
 from ...schema.capability import Capability
 from .broadcast import Broadcast, WebRecorder
+from .index import Index
 from .settings import Settings
 
 FRAME_EVERY_S = 0.5
@@ -93,8 +94,9 @@ class LiveRun:
         broadcast: Broadcast,
         surface_factory: Callable[[list[str], bool], Any] = _surface,
         poll_interval_s: float = 0.25,
+        index: Index | None = None,
     ) -> None:
-        self.settings, self.broadcast = settings, broadcast
+        self.settings, self.broadcast, self.index = settings, broadcast, index
         self.surface_factory = surface_factory
         self.poll_interval_s = poll_interval_s
         self.console: WebConsole | None = None
@@ -183,6 +185,8 @@ class LiveRun:
             except Exception as exc:  # noqa: BLE001
                 self._last["error"] = self._last["error"] or f"close failed: {exc}"
             self._last["finished"] = True
+            if self.index is not None:  # file the new receipt in the drawer before anyone looks
+                self.index.upsert_run(engine.recorder.dir)
             self.broadcast.publish({"type": "live", **self.state()})
 
     async def _screencast(self, surface: Any) -> None:

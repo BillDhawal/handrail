@@ -6,6 +6,7 @@ __pycache__/
 .ruff_cache/
 .env
 evidence/runs/
+evidence/handrail.db*
 episodes.db
 .superpowers/
 .claude/

@@ -760,6 +760,7 @@ terminal = [
 ui = [
     { name = "starlette" },
     { name = "uvicorn" },
+    { name = "websockets" },
 ]
 
 [package.dev-dependencies]
@@ -788,6 +789,7 @@ requires-dist = [
     { name = "starlette", marker = "extra == 'ui'", specifier = ">=0.40" },
     { name = "typesafe-sdk", marker = "extra == 'classify'", specifier = ">=0.7" },
     { name = "uvicorn", marker = "extra == 'ui'", specifier = ">=0.30" },
+    { name = "websockets", marker = "extra == 'ui'", specifier = ">=13" },
 ]
 provides-extras = ["browser", "terminal", "author", "classify", "serve", "ui", "bank"]
 
