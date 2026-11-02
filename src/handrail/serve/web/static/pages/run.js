@@ -18,7 +18,7 @@ const brief = (e) => Object.entries(e).filter(([k]) => !['seq', 'at', 'event', '
 
 function statusBar(res, d) {
   const ok = (res.steps || []).filter((s) => s.status === 'ok').length;
-  const cell = (t, good, label) => h('div', { class: 'stat' }, h('b', { class: good === false ? 'err' : '', style: 'font-size:1.4rem' }, t), h('span', null, label));
+  const cell = (t, good, label) => h('div', { class: 'stat' }, h('b', { class: good === false ? 'err' : '', style: 'font-size:18px;white-space:nowrap' }, t), h('span', null, label));
   return h('div', { class: 'grid cols-4' },
     cell(`llm_calls = ${res.llm_calls}`, res.llm_calls === 0 ? true : false, res.llm_calls === 0 ? 'no model on replay' : 'model was called'),
     cell(d.chain.ok ? `chain verified, ${d.chain.lines} lines` : 'chain NOT verified', d.chain.ok, 'hash chain over the log'),

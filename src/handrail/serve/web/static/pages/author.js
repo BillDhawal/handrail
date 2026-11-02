@@ -83,8 +83,7 @@ export default async function render(root) {
         h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', onclick: start }, 'Start authoring')), msg),
       h('section', { class: 'card' }, h('h2', null, 'Steps'), rail)),
     h('div', { class: 'stack' }, h('section', { class: 'card' }, h('h2', null, 'The legacy screen'), screen.el,
-      h('p', { class: 'muted small' }, 'Read-only to you. Only the model touches it until you stop.')), side)),
-  drawer);
+      h('p', { class: 'muted small' }, 'Read-only to you. Only the model touches it until you stop.')), side, drawer)));
   await poll();
   const close = ws((m) => { if (m.type === 'frame') screen.set(m); });
   return () => { close(); clearInterval(timer); };

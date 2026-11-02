@@ -35,11 +35,15 @@ async function startForm(root, query) {
       headed: headed.checked, classifier: cls.value || null, console: true };
     try { await api('/api/live/start', { body }); root.replaceChildren(); await render(root, { query }); } catch (e) { msg.textContent = e.message; }
   };
+  const idle = frameView('nothing running', 'The live screen appears here once a replay starts.');
+  idle.mode('quiet', 'nothing running');
   root.append(pageHead('Live', 'Nothing is running. Start a replay and watch it here.'),
-    h('section', { class: 'card stack', style: 'max-width:640px' }, caps.length ? [field('Capability', pick), h('h3', null, 'Inputs'), inputs, h('h3', null, 'Environment'), env,
+    h('div', { class: 'split-even' }, h('section', { class: 'card stack' }, caps.length ? [field('Capability', pick), h('h3', null, 'Inputs'), inputs, h('h3', null, 'Environment'), env,
       h('div', { class: 'row' }, h('button', { class: 'btn', onclick: () => env.append(kv('', '')) }, 'Add variable')),
       h('label', { class: 'inline' }, headed, 'Headed: show a real browser window'), field('Classifier rung', cls),
-      h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', onclick: go }, 'Start replay')), msg] : empty('No capabilities to run yet.')));
+      h('div', { class: 'row' }, h('button', { class: 'btn btn-primary', onclick: go }, 'Start replay')), msg] : empty('No capabilities to run yet.')),
+    h('section', { class: 'card' }, h('h2', null, 'Live screen'), idle.el,
+      h('p', { class: 'muted small' }, 'A screenshot twice a second while the engine drives. Tick Headed for a real window.'))));
 }
 
 export default async function render(root, ctx) {
