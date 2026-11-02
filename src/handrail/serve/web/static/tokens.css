@@ -1,0 +1,41 @@
+/* Handrail Design System — generated from tokens.json (https://claude.ai/artifact/9jDNM3XJEW5Q5Bf15GZW2H). Edit the tokens there, not here. */
+/* One theme, light. The page pins data-theme="light" on <html> so the OS dark setting never applies. */
+:root, [data-theme="light"] {
+  --surface-0: #f3f7f4;
+  --surface-1: #ffffff;
+  --surface-2: #e8efea;
+  --ink: #122018;
+  --ink-muted: #596b60;
+  --line: #d9e3dc;
+  --brand: #15803d;
+  --on-brand: #ffffff;
+  --brand-soft: #dcf3e3;
+  --signal: #b06d12;
+  --on-signal: #ffffff;
+  --signal-soft: #fbf0d9;
+  --success: var(--brand);
+  --success-soft: var(--brand-soft);
+  --danger: #c73a3a;
+  --danger-soft: #fde6e6;
+  --info: #2458c7;
+  --info-soft: #e5edfc;
+  --focus: var(--brand);
+  --shadow-sm: 0 1px 2px rgba(22,26,32,0.06);
+  --shadow-md: 0 8px 24px rgba(22,26,32,0.10);
+  color-scheme: light;
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --font-sans: "Manrope", -apple-system, "SF Pro Text", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}

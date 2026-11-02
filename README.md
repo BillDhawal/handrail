@@ -145,6 +145,12 @@ HANDRAIL_SECRET_PASSWORD=plumbline-demo uv run python examples/agent_caller.py \
 
 ## See it in a browser
 
+The look comes from the Handrail design system (https://claude.ai/artifact/9jDNM3XJEW5Q5Bf15GZW2H):
+`static/tokens.css` is generated from its tokens (one light theme, green brand, brass only for
+"needs a person"), `static/ds.css` is its component stylesheet, and `static/app.css` maps the
+page classes onto them. Change colours and type in the design system, then regenerate tokens.css.
+
+
 A shop window onto the same shop. `handrail ui` shows the cards, the runs and the drift in a
 page, and lets you start a replay from it. It is not a second engine.
 
