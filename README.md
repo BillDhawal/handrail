@@ -22,6 +22,10 @@ The target is **PLUMBLINE**, a fake core-banking app in `targetapp/` built to be
 real ones are: framesets, no ids, no labels, table layout, form tokens that change every page,
 two tenants with different markup, and faults you can switch on.
 
+![A takeover run in the Handrail console: the engine pauses on a screen it cannot name, a person takes over and hands back, and the run finishes with zero model calls](docs/media/takeover-run.gif)
+
+*A replay hits a rewritten screen, the ladder reaches a person, they take over and hand back, and the run finishes. [Watch the full-quality video](docs/media/takeover-run.mp4).*
+
 **Where to look**
 
 - [REPORT.md](REPORT.md): the design write-up, seven sections.
